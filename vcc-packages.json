@@ -1,0 +1,20 @@
+{
+	"name": "VRCAvatarForge",
+	"author": "Kiro Neem",
+	"url": "https://github.com/BirdiePeep/VRCAvatarForge",
+	"id": "com.tropical.avatarforge",
+	"packages": {
+		"com.tropical.avatarforge": {
+			"versions": {
+				"0.1.0": {
+					"name": "com.tropical.avatarforge",
+					"displayName": "VRCAvatarForge",
+					"version": "0.1.0",
+					"description": "Streamlined workflow for VRChat avatars.",
+					"hideInEditor": false,
+					"url": "https://github.com/BirdiePeep/VRCAvatarForge/Releases/com.tropical.avatarforge.0.1.0.zip"
+				}
+			}
+		}
+	}
+}

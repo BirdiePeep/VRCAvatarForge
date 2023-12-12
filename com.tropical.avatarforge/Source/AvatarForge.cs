@@ -2,7 +2,6 @@
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.SDK3.Avatars.Components;
-using UnityScript.Steps;
 
 namespace Tropical.AvatarForge
 {

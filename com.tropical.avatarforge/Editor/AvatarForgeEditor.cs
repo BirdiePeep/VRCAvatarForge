@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using NUnit.Framework;
 
 namespace Tropical.AvatarForge
 {
@@ -52,6 +53,17 @@ namespace Tropical.AvatarForge
 
             InitStyles();
 
+            var rootComponent = PrefabUtility.GetCorrespondingObjectFromOriginalSource(setup);
+            if(rootComponent != null)
+            {
+                EditorGUILayout.HelpBox("You are viewing a prefab varient for this component, please modify the original component", MessageType.Warning);
+                if(GUILayout.Button("Open Original Prefab"))
+                {
+                    var path = AssetDatabase.GetAssetPath(rootComponent);
+                    AssetDatabase.OpenAsset(AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)));
+                }
+            }
+            EditorGUI.BeginDisabledGroup(rootComponent != null);
             EditorGUI.BeginChangeCheck();
             {
                 //Features
@@ -82,6 +94,7 @@ namespace Tropical.AvatarForge
                 EditorUtility.SetDirty(target);
             }
             serializedObject.ApplyModifiedProperties();
+            EditorGUI.EndDisabledGroup();
         }
 
         bool BeginCategory(string title, ref bool foldout)
@@ -118,17 +131,15 @@ namespace Tropical.AvatarForge
                 }
                 else
                 {
-                    EditorGUI.indentLevel += 1;
                     element.isExpanded = EditorGUILayout.Foldout(element.isExpanded, new GUIContent(editor.displayName));
-                    EditorGUI.indentLevel -= 1;
                 }
 
                 //Help
-                if(GUILayout.Button(helpButton, GUILayout.Width(32)))
+                /*if(GUILayout.Button(helpButton, GUILayout.Width(32)))
                 {
                     EditorUtility.DisplayDialog("Help", "Help URLs not yet implemented", "Ok");
                     //Application.OpenURL(feature.helpURL);
-                }  
+                }*/
 
                 return element.isExpanded;
             };
@@ -156,15 +167,21 @@ namespace Tropical.AvatarForge
                 }
                 return true;
             };
-            featureList.OnPreAdd = (element) =>
+            featureList.OnPreAdd = (list) =>
             {
-                var popup = new AddListItemPopup();
-                popup.list = element;
-                popup.size = new Vector2(150, 200);
-                popup.options = new AddListItemPopup.Option[FeatureEditorBase.editorTypes.Count];
-                for(int i=0; i< FeatureEditorBase.editorTypes.Count; i++)
-                    popup.options[i] = new AddListItemPopup.Option(FeatureEditorBase.editorNames[i], FeatureEditorBase.editorTypes[i]);
-                popup.Show();
+                var menu = new GenericMenu();
+                for(int i = 0; i < FeatureEditorBase.editorTypes.Count; i++)
+                    menu.AddItem(new GUIContent(FeatureEditorBase.editorNames[i]), false, OnAdd, FeatureEditorBase.editorTypes[i]);
+                void OnAdd(object obj)
+                {
+                    var type = (System.Type)obj;
+                    list.arraySize += 1;
+                    var element = list.GetArrayElementAtIndex(list.arraySize - 1);
+                    element.isExpanded = true;
+                    element.managedReferenceValue = System.Activator.CreateInstance(type);
+                    list.serializedObject.ApplyModifiedProperties();
+                }
+                menu.ShowAsContext();
 
                 return null;
             };

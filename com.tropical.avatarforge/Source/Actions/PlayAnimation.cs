@@ -1,23 +1,28 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Tropical.AvatarForge
 {
     [System.Serializable]
-    public class PlayAnimation : Action
+    public class PlayAnimation : Action, IMenuInitialize
     {
-        public enum State
+        /*public enum State
         {
             Enter,
             Exit,
-        }
+        }*/
 
         [System.Serializable]
         public struct Animation
         {
+            public Animation(AnimationClip clip, Globals.AnimationLayer layer)
+            {
+                this.clip = clip;
+                this.layer = layer;
+            }
+
             public AnimationClip clip;
             public Globals.AnimationLayer layer;
-            public State state;
+            //public State state;
         }
 
         public Animation[] animations;
@@ -25,9 +30,14 @@ namespace Tropical.AvatarForge
         public override Action Clone()
         {
             var result = new PlayAnimation();
-            result.animations = animations;
+            result.animations = (Animation[])animations.Clone();
             return result;
         }
-        
+
+        public void Initialize()
+        {
+            animations = new Animation[1];
+            animations[0] = new Animation(null, Globals.AnimationLayer.FX);
+        }
     }
 }

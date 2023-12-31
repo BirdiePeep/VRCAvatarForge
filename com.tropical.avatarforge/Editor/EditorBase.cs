@@ -40,8 +40,8 @@ namespace Tropical.AvatarForge
         public bool BeginCategory(string name, SerializedProperty toggle, bool isModified = false)
         {
             EditorGUILayout.BeginVertical();
-            EditorGUI.indentLevel += 1;
             toggle.boolValue = EditorGUILayout.Foldout(toggle.boolValue, isModified ? $"{name}*" : name);
+            EditorGUI.indentLevel += 1;
             return toggle.boolValue;
         }
         public void EndCategory()

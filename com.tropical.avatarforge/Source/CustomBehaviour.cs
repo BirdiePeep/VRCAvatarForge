@@ -6,9 +6,9 @@
         public override bool HasExit()
         {
             //Check for exit transition
-            foreach(var trigger in triggers)
+            foreach(var trigger in GetTriggers())
             {
-                if(trigger.type == Trigger.Type.Exit)
+                if(trigger.HasExit())
                     return true;
             }
             return false;

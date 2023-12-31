@@ -85,7 +85,7 @@ namespace Tropical.AvatarForge
             menuList.OnElementHeader = (index, element) =>
             {
                 var control = ActionsEditor.GetManagedReferenceValue(element) as ActionMenu.Control;
-                GUILayout.Space(16);
+                //GUILayout.Space(16);
                 element.isExpanded = EditorGUILayout.Foldout(element.isExpanded, new GUIContent(control.name));
 
                 //Sub-Menu
@@ -134,21 +134,22 @@ namespace Tropical.AvatarForge
             };
             menuList.OnPreAdd = (list) =>
             {
-                var popup = new AddListItemPopup();
-                popup.list = list;
-                popup.size = new Vector2(150, 200);
-                popup.options = new AddListItemPopup.Option[]
+                var menu = new GenericMenu();
+                menu.AddItem(new GUIContent("Toggle"), false, OnAdd, typeof(ActionMenu.Toggle));
+                menu.AddItem(new GUIContent("Button"), false, OnAdd, typeof(ActionMenu.Button));
+                menu.AddItem(new GUIContent("Slider"), false, OnAdd, typeof(ActionMenu.Slider));
+                menu.AddItem(new GUIContent("Sub Menu"), false, OnAdd, typeof(ActionMenu.SubMenu));
+                void OnAdd(object obj)
                 {
-                    new AddListItemPopup.Option("Toggle", typeof(ActionMenu.Toggle)),
-                    new AddListItemPopup.Option("Button", typeof(ActionMenu.Button)),
-                    new AddListItemPopup.Option("Slider", typeof(ActionMenu.Slider)),
-                    new AddListItemPopup.Option("Sub Menu", typeof(ActionMenu.SubMenu)),
-                };
-                popup.OnAdd = (element, obj) =>
-                {
-                    element.FindPropertyRelative("name").stringValue = $"New {obj.GetType().Name}";
-                };
-                popup.Show();
+                    var type = (Type)obj;
+                    list.arraySize += 1;
+                    var element = list.GetArrayElementAtIndex(list.arraySize - 1);
+                    element.isExpanded = true;
+                    element.managedReferenceValue = System.Activator.CreateInstance(type);
+                    element.FindPropertyRelative("name").stringValue = $"New {type.Name}";
+                    list.serializedObject.ApplyModifiedProperties();
+                }
+                menu.ShowAsContext();
 
                 return null;
             };
@@ -161,73 +162,25 @@ namespace Tropical.AvatarForge
             }
 
         ActionsEditor actionEditor = new ActionsEditor();
-        void DrawToggle(SerializedProperty action, ActionMenu.Toggle toggle)
+        void DrawToggle(SerializedProperty property, ActionMenu.Toggle toggle)
         {
             //Default
             actionEditor.setup = setup;
-            actionEditor.SetTarget(action);
-            actionEditor.OnInspectorGUI();
-
-            if(BeginCategory("Additional Options", action.FindPropertyRelative("foldoutOptions")))
+            actionEditor.SetTarget(property);
+            actionEditor.OnOptions = () =>
             {
-                var defaultValue = action.FindPropertyRelative("defaultValue");
-                var isOffState = action.FindPropertyRelative("isOffState");
-                var group = action.FindPropertyRelative("group");
-                EditorGUI.BeginChangeCheck();
-                DrawControlGroup(group);
-                if(EditorGUI.EndChangeCheck())
-                {
-                    defaultValue.boolValue = false;
-                    isOffState.boolValue = false;
-                }
+                DrawControlGroup(property);
 
-                //Options
+                //Non-Group Options
+                var group = property.FindPropertyRelative("group");
                 if(string.IsNullOrEmpty(group.stringValue))
                 {
-                    EditorGUILayout.PropertyField(defaultValue);
+                    var defaultValue = property.FindPropertyRelative("defaultValue");
+                    EditorGUILayout.PropertyField(defaultValue, new GUIContent("Default On"));
+                    DrawParameterDropDown(property.FindPropertyRelative("parameter"), "Parameter", false);
                 }
-                else
-                {
-                    //DefaultValue
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(defaultValue);
-                    if(EditorGUI.EndChangeCheck() && defaultValue.boolValue)
-                    {
-                        //Turn off other defaults
-                        selectedMenu.serializedObject.ApplyModifiedProperties();
-                        var toggles = FindControlGroup(group.stringValue);
-                        foreach(var item in toggles)
-                        {
-                            if(item == toggle)
-                                continue;
-                            item.defaultValue = false;
-                        }
-                        selectedMenu.serializedObject.Update();
-                    }
-
-                    //IsOffState
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(isOffState);
-                    if(EditorGUI.EndChangeCheck() && isOffState.boolValue)
-                    {
-                        //Turn off other defaults
-                        selectedMenu.serializedObject.ApplyModifiedProperties();
-                        var toggles = FindControlGroup(group.stringValue);
-                        foreach(var item in toggles)
-                        {
-                            if(item == toggle)
-                                continue;
-                            item.isOffState = false;
-                        }
-                        selectedMenu.serializedObject.Update();
-                    }
-                }
-
-                EditorGUI.BeginDisabledGroup(!string.IsNullOrEmpty(group.stringValue));
-                DrawParameterDropDown(action.FindPropertyRelative("parameter"), "Parameter", false);
-                EditorGUI.EndDisabledGroup();
-            }
-            EndCategory();
+            };
+            actionEditor.OnInspectorGUI();
         }
         void DrawButton(SerializedProperty action)
         {
@@ -236,7 +189,7 @@ namespace Tropical.AvatarForge
             actionEditor.SetTarget(action);
             actionEditor.OnInspectorGUI();
 
-            if(BeginCategory("Additional Options", action.FindPropertyRelative("foldoutOptions")))
+            if(BeginCategory("Options", action.FindPropertyRelative("foldoutOptions")))
             {
                 DrawParameterDropDown(action.FindPropertyRelative("parameter"), "Parameter", false);
             }
@@ -267,8 +220,16 @@ namespace Tropical.AvatarForge
         //Control Groups
         public class ControlGroup
         {
-            public System.Type type;
-            public List<ActionMenu.Control> controls = new List<ActionMenu.Control>();
+            public List<IGroupedControl> controls = new List<IGroupedControl>();
+            public IGroupedControl defaultControl;
+            public IGroupedControl offState;
+
+            public void SetDefault(IGroupedControl value)
+            {
+                defaultControl = value;
+                foreach(var control in controls)
+                    control.IsGroupDefault = control == value;
+            }
         }
 
         HashSet<ValueTuple<string, System.Type>> controlGroups = new HashSet<ValueTuple<string, Type>>();
@@ -287,24 +248,28 @@ namespace Tropical.AvatarForge
                         Build(subMenu.subMenu);
                     else if(item is Toggle toggle)
                     {
-                        if(!string.IsNullOrEmpty(toggle.group))
+                        if(toggle.HasGroup)
                             controlGroups.Add(new ValueTuple<string, System.Type>(toggle.group, typeof(Toggle)));
                     }
                 }
             }
 
             //Build dropdown info
-            int index = 0;
-            groupNames = new string[controlGroups.Count];
+            int index = 1;
+            groupNames = new string[controlGroups.Count + 1];
+            groupNames[0] = "[None]";
             foreach(var group in controlGroups)
             {
                 groupNames[index] = group.Item1;
                 index++;
             }
         }
-        IEnumerable<ActionMenu.Toggle> FindControlGroup(string groupName)
+        ControlGroup FindControlGroup(string groupName)
         {
-            List<Toggle> toggles = new List<Toggle>();
+            //Find all controls
+            IGroupedControl offState = null;
+            IGroupedControl defaultControl = null;
+            var controls = new List<IGroupedControl>();
             Build(rootMenu);
             void Build(ActionMenu menu)
             {
@@ -314,34 +279,112 @@ namespace Tropical.AvatarForge
                 {
                     if(item is SubMenu subMenu)
                         Build(subMenu.subMenu);
-                    else if(item is Toggle toggle)
+                    else if(item is IGroupedControl control)
                     {
-                        if(toggle.group == groupName)
-                            toggles.Add(toggle);
+                        if(control.Group == groupName)
+                        {
+                            if(defaultControl == null && control.IsGroupDefault)
+                                defaultControl = control;
+                            if(offState == null && control.IsGroupOffState)
+                                offState = control;
+                            controls.Add(control);
+                        }
                     }
                 }
             }
-            return toggles;
+            if(controls.Count == 0)
+                return null;
+
+            var group = new ControlGroup();
+            group.controls = controls;
+            group.defaultControl = defaultControl;
+            group.offState = offState;
+            return group;
         }
 
         void DrawControlGroup(SerializedProperty property)
         {
+            /*if(GUILayout.Button(!string.IsNullOrEmpty(property.stringValue) ? property.stringValue : "[None]"))
+            {
+                var menu = new GenericMenu();
+                menu.AddItem(new GUIContent("[None]"), string.IsNullOrEmpty(property.stringValue), () =>
+                {
+                    property.stringValue = string.Empty;
+                    property.serializedObject.ApplyModifiedProperties();
+                });
+                var controlGroups = target.FindPropertyRelative("controlGroups");
+                for(int i=0; i<controlGroups.arraySize; i++)
+                {
+                    var group = controlGroups.GetArrayElementAtIndex(i);
+                    var name = group.FindPropertyRelative("name");
+                    menu.AddItem(new GUIContent(name.stringValue), name.stringValue == property.stringValue, () =>
+                    {
+                        property.stringValue = name.stringValue;
+                        property.serializedObject.Update();
+                    });
+                }
+                menu.AddItem(new GUIContent("[New Group]"), false, () =>
+                {
+                    property.stringValue = InputDialogWindow.ShowDialog("New Toggle Group", "Input New Toggle Group Name");
+                    property.serializedObject.ApplyModifiedProperties();
+                });
+                menu.ShowAsContext();
+            }*/
+
+            var groupName = property.FindPropertyRelative("group");
+            var controlGroup = FindControlGroup(groupName.stringValue);
+
             EditorGUILayout.BeginHorizontal();
 
             //Input field
             EditorGUI.BeginChangeCheck();
-            property.stringValue = EditorGUILayout.TextField(property.displayName, property.stringValue);
+            groupName.stringValue = EditorGUILayout.TextField("Group", groupName.stringValue);
             if(EditorGUI.EndChangeCheck())
                 BuildControlGroups();
 
             //Group dropdown
             EditorGUI.BeginChangeCheck();
-            int index = ArrayUtility.IndexOf(groupNames, property.stringValue);
+            int index = string.IsNullOrEmpty(groupName.stringValue) ? 0 : ArrayUtility.IndexOf(groupNames, groupName.stringValue);
             index = EditorGUILayout.Popup(index, groupNames, GUILayout.MaxWidth(SecondDropdownSize));
             if(EditorGUI.EndChangeCheck())
-                property.stringValue = groupNames[index];
+                groupName.stringValue = index == 0 ? null : groupNames[index];
 
             EditorGUILayout.EndHorizontal();
+
+            //Default value
+            if(!string.IsNullOrEmpty(groupName.stringValue))
+            {
+                var control = (Control)property.managedReferenceValue;
+
+                //Button
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.PrefixLabel("Default On");
+                if(GUILayout.Button(controlGroup.defaultControl != null ? ((Control)controlGroup.defaultControl).name : "[None]"))
+                {
+                    var menu = new GenericMenu();
+                    menu.AddItem(new GUIContent("[None]"), controlGroup.defaultControl == null, () =>
+                    {
+                        controlGroup.SetDefault(null);
+                        property.serializedObject.Update();
+                        EditorUtility.SetDirty(property.serializedObject.targetObject);
+                    });
+                    foreach(var item in controlGroup.controls)
+                    {
+                        var groupControl = item as Control;
+                        menu.AddItem(new GUIContent(groupControl.name), controlGroup.defaultControl == item, () =>
+                        {
+                            controlGroup.SetDefault(item);
+                            property.serializedObject.Update();
+                            EditorUtility.SetDirty(property.serializedObject.targetObject);
+                        });
+                    }
+                    menu.ShowAsContext();
+                }
+                EditorGUILayout.EndHorizontal();
+
+                //IsOffState
+                //toggles.isOffState = EditorGUILayout.Toggle("Is Off State", toggles.isOffState);
+            }
         }
 
         public override string helpURL => "";
@@ -403,13 +446,14 @@ namespace Tropical.AvatarForge
             if(source == null)
                 return;
 
-            foreach(var sourceAction in source.controls)
+            //Controls
+            foreach(var control in source.controls)
             {
-                var destAction = dest.FindMenuActionOfType(sourceAction.name, sourceAction.GetType(), false);
+                var destAction = dest.FindMenuActionOfType(control.name, control.GetType(), false);
                 if(destAction != null)
                 {
                     //Recursive
-                    if(sourceAction is ActionMenu.SubMenu sourceSubMenu)
+                    if(control is ActionMenu.SubMenu sourceSubMenu)
                     {
                         var destSubMenu = destAction as ActionMenu.SubMenu;
                         if(destSubMenu.subMenu == null)
@@ -417,13 +461,13 @@ namespace Tropical.AvatarForge
                         Combine(destSubMenu.subMenu, sourceSubMenu.subMenu);
                     }
                     else
-                        Debug.LogWarning($"Unable to add Action Menu Control \"{sourceAction.name}\" as it was already included by another source");
+                        Debug.LogWarning($"Unable to add Action Menu Control \"{control.name}\" as it was already included by another source");
                 }
                 else
                 {
                     //Copy the action
-                    var newAction = (ActionMenu.Control)Activator.CreateInstance(sourceAction.GetType());
-                    sourceAction.DeepCopyTo(newAction);
+                    var newAction = (ActionMenu.Control)Activator.CreateInstance(control.GetType());
+                    control.DeepCopyTo(newAction);
                     dest.controls.Add(newAction);
                 }
             }
@@ -469,19 +513,24 @@ namespace Tropical.AvatarForge
 
             //Build control groups
             var controlGroups = new Dictionary<string, ControlGroup>();
-            foreach(var control in controls)
+            foreach(var item in controls)
             {
-                if(control is Toggle toggle)
+                if(item is IGroupedControl control)
                 {
-                    if(!string.IsNullOrEmpty(toggle.group))
+                    if(control.HasGroup)
                     {
                         ControlGroup group;
-                        if(!controlGroups.TryGetValue(toggle.group, out group))
+                        if(!controlGroups.TryGetValue(control.Group, out group))
                         {
                             group = new ControlGroup();
-                            controlGroups.Add(toggle.group, group);
+                            controlGroups.Add(control.Group, group);
                         }
-                        group.controls.Add(toggle);
+
+                        if(group.defaultControl == null && control.IsGroupDefault)
+                            group.defaultControl = control;
+                        if(group.offState == null && control.IsGroupOffState)
+                            group.offState = control;
+                        group.controls.Add(control);
                     }
                 }
             }
@@ -494,13 +543,12 @@ namespace Tropical.AvatarForge
                     Control defaultControl = null;
                     for(int i = 0; i < group.controls.Count; i++)
                     {
-                        var control = group.controls[i];
-                        if(control is Toggle toggle)
+                        var item = group.controls[i];
+                        var control = (Control)item;
+                        if(control != null)
                         {
-                            toggle.parameter = paramName;
-                            toggle.controlValue = toggle.isOffState ? 0 : i + 1;
-                            if(toggle.defaultValue == true)
-                                defaultControl = toggle;
+                            control.parameter = paramName;
+                            control.controlValue = item.IsGroupOffState ? 0 : i + 1;
                         }
                     }
 
@@ -513,11 +561,8 @@ namespace Tropical.AvatarForge
                 else
                 {
                     //Remove group
-                    var control = group.controls[0];
-                    if(control is Toggle toggle)
-                    {
-                        toggle.group = null;
-                    }
+                    if(group.controls[0] is IGroupedControl grouped)
+                        grouped.Group = null;
                 }
             }
 
@@ -538,7 +583,7 @@ namespace Tropical.AvatarForge
                         button.controlValue = 1;
                         break;
                     case Toggle toggle:
-                        if(!string.IsNullOrEmpty(toggle.group))
+                        if(toggle.HasGroup)
                             parameter = null;
                         else
                         {

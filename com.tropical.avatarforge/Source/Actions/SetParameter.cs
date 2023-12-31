@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Tropical.AvatarForge
 {
     [System.Serializable]
-    public class SetParameter : Action
+    public class SetParameter : Action, IMenuInitialize
     {
         [System.Serializable]
         public class Parameter
@@ -18,7 +17,6 @@ namespace Tropical.AvatarForge
             public float valueMin = 0;
             public float valueMax = 1;
             public float chance = 0.5f;
-            //public bool isZeroValid = true;
 
             public Parameter Clone()
             {
@@ -31,18 +29,25 @@ namespace Tropical.AvatarForge
                 result.valueMin = valueMin;
                 result.valueMax = valueMax;
                 result.chance = chance;
-                //result.isZeroValid = isZeroValid;
                 return result;
             }
         }
-        [SerializeReference] public List<Parameter> parameters = new List<Parameter>();
+        public Parameter[] parameters;
 
         public override Action Clone()
         {
             var result = new SetParameter();
-            foreach(var param in parameters)
-                result.parameters.Add(param.Clone());
+            if(parameters != null)
+            {
+                result.parameters = new Parameter[parameters.Length];
+                for(int i=0; i<parameters.Length; i++)
+                    result.parameters[i] = parameters[i].Clone();
+            }
             return result;
+        }
+        public void Initialize()
+        {
+            parameters = new Parameter[1];
         }
     }
 }

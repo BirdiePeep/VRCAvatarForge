@@ -19,11 +19,6 @@ namespace Tropical.AvatarForge
 
             public Globals.GestureEnum left = Globals.GestureEnum.Neutral;
             public Globals.GestureEnum right = Globals.GestureEnum.Neutral;
-            
-            public override bool HasExit()
-            {
-                return true;
-            }
 
             [System.Serializable]
             public struct GestureTable
@@ -73,6 +68,36 @@ namespace Tropical.AvatarForge
                 }
             }
             public GestureTable gestureTable = new GestureTable();
+
+            public override IEnumerable<Trigger> GetTriggers()
+            {
+                if(sides == SideType.Either)
+                {
+                    //Left trigger
+                    var trigger = new BehaviourItem.Trigger();
+                    trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureLeft, "", BehaviourItem.Condition.Logic.Equals, (int)left));
+                    yield return trigger;
+
+                    //Right trigger
+                    trigger = new BehaviourItem.Trigger();
+                    trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureRight, "", BehaviourItem.Condition.Logic.Equals, (int)right));
+                    yield return trigger;
+                }
+                else
+                {
+                    //Combined trigger
+                    var trigger = new BehaviourItem.Trigger();
+                    if(sides != SideType.Right)
+                        trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureLeft, "", BehaviourItem.Condition.Logic.Equals, (int)left));
+                    if(sides != SideType.Left)
+                        trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureRight, "", BehaviourItem.Condition.Logic.Equals, (int)right));
+                    yield return trigger;
+                }
+
+                //Base
+                foreach(var item in base.GetTriggers())
+                    yield return item;
+            }
         }
         public List<GestureItem> gestures = new List<GestureItem>();
 

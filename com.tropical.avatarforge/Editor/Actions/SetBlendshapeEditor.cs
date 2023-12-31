@@ -19,6 +19,15 @@ namespace Tropical.AvatarForge
             if(mesh == null)
                 return;
 
+            //var optionsFoldout = target.FindPropertyRelative("optionsFoldout");
+            //optionsFoldout.boolValue = EditorGUILayout.Foldout(optionsFoldout.boolValue, "Options");
+            //EditorGUI.indentLevel++;
+            //if(optionsFoldout.boolValue)
+            {
+                EditorGUILayout.PropertyField(target.FindPropertyRelative("inverted"));
+            }
+            //EditorGUI.indentLevel--;
+
             var popup = new string[mesh.blendShapeCount];
             for(int i = 0; i < mesh.blendShapeCount; i++)
             {
@@ -32,18 +41,17 @@ namespace Tropical.AvatarForge
                 var weight = blendshape.FindPropertyRelative("weight");
                 var popupIndex = ArrayUtility.IndexOf(popup, name.stringValue);
 
-                EditorGUILayout.BeginHorizontal();
-                {
-                    //Property
-                    EditorGUI.BeginChangeCheck();
-                    popupIndex = EditorGUILayout.Popup(popupIndex, popup);
-                    if(EditorGUI.EndChangeCheck())
-                        name.stringValue = popup[popupIndex];
+                GUILayout.Label("Blendshape");
 
-                    //Value
-                    weight.floatValue = EditorGUILayout.Slider(weight.floatValue, 0f, 100f);
-                }
-                EditorGUILayout.EndHorizontal();
+                //Property
+                EditorGUI.BeginChangeCheck();
+                popupIndex = EditorGUILayout.Popup(popupIndex, popup);
+                if(EditorGUI.EndChangeCheck())
+                    name.stringValue = popup[popupIndex];
+
+                //Value
+                weight.floatValue = EditorGUILayout.Slider(weight.floatValue, 0f, 100f);
+
                 return false;
             };
             blendshapeList.OnInspectorGUI();
@@ -57,6 +65,10 @@ namespace Tropical.AvatarForge
             if(path == null)
                 return;
             AddKeyframes(animation, path, isEnabled);
+
+            //Set base value
+            foreach(var blendshape in action.blendshapes)
+                action.target.SetBlendShapeWeight(action.target.sharedMesh.GetBlendShapeIndex(blendshape.name), action.inverted ? blendshape.weight : 0f);
         }
         public override bool AffectsLayer(Globals.AnimationLayer layerType)
         {
@@ -64,13 +76,13 @@ namespace Tropical.AvatarForge
         }
         public void AddKeyframes(AnimationClip animation, string objPath, bool isEnabled)
         {
-            if(action.blendshapes != null)
+            if(action.blendshapes != null && isEnabled)
             {
                 //Create curves
                 foreach(var blendshape in action.blendshapes)
                 {
                     var curve = new AnimationCurve();
-                    curve.AddKey(new UnityEngine.Keyframe(0f, blendshape.weight));
+                    curve.AddKey(new UnityEngine.Keyframe(0f, action.inverted ? 0f : blendshape.weight));
                     animation.SetCurve(objPath, typeof(SkinnedMeshRenderer), $"blendShape.{blendshape.name}", curve);
                 }
             }

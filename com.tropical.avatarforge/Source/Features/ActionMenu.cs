@@ -54,10 +54,35 @@ namespace Tropical.AvatarForge
         }
         [SerializeReference] public List<Control> controls = new List<Control>();
 
+        public interface IGroupedControl
+        {
+            public bool HasGroup { get; }
+            public string Group { get; set; }
+            public bool IsGroupDefault { get; set; }
+            public bool IsGroupOffState { get; set; }
+        }
+
         [Serializable]
-        public class Toggle : Control
+        public class Toggle : Control, IGroupedControl
         {
             public string group;
+
+            public bool HasGroup
+            {
+                get
+                {
+                    return !string.IsNullOrEmpty(group);
+                }
+            }
+            public string Group
+            {
+                get { return group; }
+                set { group = value; }
+            }
+            public bool IsGroupDefault { get => defaultValue; set => defaultValue = value; }
+            public bool IsGroupOffState { get => isOffState; set => isOffState = value; }
+
+            
 
             [Tooltip("This toggle be enabled by default.")]
             public bool defaultValue;
@@ -236,9 +261,23 @@ namespace Tropical.AvatarForge
             return null;
         }
 
-        class ControlGroup
+        /*[System.Serializable]
+        public class ControlGroup
         {
+            public string name;
+            public string defaultValue;
+            public bool isOffState;
             public List<Control> controls = new List<Control>();
         }
+        public List<ControlGroup> controlGroups = new List<ControlGroup>();
+        public ControlGroup FindControlGroup(string groupName)
+        {
+            foreach(var group in controlGroups)
+            {
+                if(group.name == groupName)
+                    return group;
+            }
+            return null;
+        }*/
     }
 }

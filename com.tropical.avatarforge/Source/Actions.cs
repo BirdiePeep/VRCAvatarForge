@@ -5,4 +5,9 @@
     {
         public abstract Action Clone();
     }
+
+    public interface IMenuInitialize
+    {
+        public void Initialize();
+    }
 }

@@ -47,11 +47,60 @@ namespace Tropical.AvatarForge
             }
             public enum Type
             {
-                Enter = 0,
-                Exit = 1,
+                Simple = 0,
+                Enter = 1,
+                Exit = 2,
             }
+
+            public bool HasEnter()
+            {
+                return type == Type.Simple || type == Type.Enter;
+            }
+            public bool HasExit()
+            {
+                return type == Type.Simple || type == Type.Exit;
+            }
+
+            public IEnumerable<Condition> GetConditions(bool isEnter)
+            {
+                switch(type)
+                {
+                    case Type.Simple:
+                    {
+                        if(isEnter)
+                        {
+                            foreach(var item in conditions)
+                                yield return item;
+                        }
+                        else
+                        {
+                            foreach(var item in conditions)
+                                yield return item.GetInverse();
+                        }
+                        break;
+                    }
+                    case Type.Enter:
+                    {
+                        if(isEnter)
+                        {
+                            foreach(var item in conditions)
+                                yield return item;
+                        }
+                        break;
+                    }
+                    case Type.Exit:
+                    {
+                        if(!isEnter)
+                        {
+                            foreach(var item in conditions)
+                                yield return item;
+                        }
+                        break;
+                    }
+                }
+            }
+
             public Type type;
-            //public bool useDefaultCondition = true;
             public List<Condition> conditions = new List<Condition>();
             public bool foldout = true;
         }
@@ -95,6 +144,27 @@ namespace Tropical.AvatarForge
                 LessThen = 3,
             }
 
+            public Condition GetInverse()
+            {
+                var result = new Condition(this);
+                switch(logic)
+                {
+                    case Logic.Equals:
+                        result.logic = Logic.NotEquals;
+                        break;
+                    case Logic.NotEquals:
+                        result.logic = Logic.Equals;
+                        break;
+                    case Logic.GreaterThen:
+                        result.logic = Logic.LessThen;
+                        break;
+                    case Logic.LessThen:
+                        result.logic = Logic.GreaterThen;
+                        break;
+                }
+                return result;
+            }
+
             public string GetParameter()
             {
                 if(type == Globals.ParameterEnum.Custom)
@@ -109,8 +179,17 @@ namespace Tropical.AvatarForge
             public float value = 1;
             public bool shared = false;
         }
-        public List<Trigger> triggers = new List<Trigger>();
-        public List<Condition> conditions = new List<Condition>();
+        public virtual IEnumerable<Trigger> GetTriggers()
+        {
+            foreach(var action in actions)
+            {
+                if(action is ITriggerProvider provder)
+                {
+                    foreach(var item in provder.GetTriggers())
+                        yield return item;
+                }
+            }
+        }
 
         //Build
         public virtual string GetLayerGroup()
@@ -137,11 +216,6 @@ namespace Tropical.AvatarForge
             clone.actions.Clear();
             foreach(var action in this.actions)
                 clone.actions.Add(action.Clone());
-
-            //Triggers
-            clone.triggers.Clear();
-            foreach(var trigger in this.triggers)
-                clone.triggers.Add(new BehaviourItem.Trigger(trigger));
 
             //Meta
             clone.foldoutTiming = this.foldoutTiming;

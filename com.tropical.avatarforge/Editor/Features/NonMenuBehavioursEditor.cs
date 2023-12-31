@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.Animations;
 using static Tropical.AvatarForge.Globals;
@@ -11,14 +12,16 @@ namespace Tropical.AvatarForge
         public override void OnInspectorGUI()
         {
             behaviourList.list = target.FindPropertyRelative("behaviours");
+            behaviourList.showHeader = true;
             behaviourList.OnElementHeader = (index, element) =>
             {
-                element.isExpanded = EditorGUILayout.Foldout(element.isExpanded, "Behaviour");
-
+                element.isExpanded = EditorGUILayout.Foldout(element.isExpanded, $"Behaviour - {element.FindPropertyRelative("name").stringValue}");
                 return element.isExpanded;
             };
             behaviourList.OnElementBody = (index, element) =>
             {
+                EditorGUILayout.PropertyField(element.FindPropertyRelative("name"));
+
                 ActionsEditor actionEditor = new ActionsEditor();
                 actionEditor.SetTarget(element);
                 actionEditor.editor = editor;

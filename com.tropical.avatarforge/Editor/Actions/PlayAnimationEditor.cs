@@ -11,11 +11,13 @@ namespace Tropical.AvatarForge
             animationList.list = target.FindPropertyRelative("animations");
             animationList.OnElementHeader = (index, element) =>
             {
+                GUILayout.Label("Animation");
+
                 DrawAnimationReference(null, element.FindPropertyRelative("clip"), $"Animation_{Random.Range(1000, 9999)}");
 
                 //EditorGUILayout.PropertyField(element.FindPropertyRelative("clip"), GUIContent.none);
                 EditorGUILayout.PropertyField(element.FindPropertyRelative("layer"), GUIContent.none);
-                EditorGUILayout.PropertyField(element.FindPropertyRelative("state"), GUIContent.none);
+                //EditorGUILayout.PropertyField(element.FindPropertyRelative("state"), GUIContent.none);
 
                 return true;
             };
@@ -23,7 +25,7 @@ namespace Tropical.AvatarForge
             {
                 element.FindPropertyRelative("clip").objectReferenceValue = null;
                 element.FindPropertyRelative("layer").intValue = (int)Globals.AnimationLayer.FX;
-                element.FindPropertyRelative("state").intValue = (int)PlayAnimation.State.Enter;
+                //element.FindPropertyRelative("state").intValue = (int)PlayAnimation.State.Enter;
             };
             animationList.OnInspectorGUI();
 
@@ -42,9 +44,9 @@ namespace Tropical.AvatarForge
         {
             foreach(var animation in action.animations)
             {
-                if(animation.clip != null && animation.layer == layer && (isEnter ? PlayAnimation.State.Enter : PlayAnimation.State.Exit) == animation.state)
+                if(animation.clip != null && animation.layer == layer && isEnter)// && (isEnter ? PlayAnimation.State.Enter : PlayAnimation.State.Exit) == animation.state)
                 {
-                    AvatarBuilder.CopyCurves(animation.clip, animation.clip);
+                    AvatarBuilder.CopyCurves(animation.clip, clip);
                 }
             }
         }
@@ -56,6 +58,15 @@ namespace Tropical.AvatarForge
                 {
                     return true;
                 }
+            }
+            return false;
+        }
+        public override bool RequiresAnimationLoop()
+        {
+            foreach(var animation in action.animations)
+            {
+                if(animation.clip != null && animation.clip.isLooping)
+                    return true;
             }
             return false;
         }

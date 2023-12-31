@@ -1,9 +1,6 @@
 ﻿using System;
 using UnityEngine;
 using UnityEditor;
-using static Codice.Client.BaseCommands.Import.Commit;
-using System.Drawing;
-using static GluonGui.WorkspaceWindow.Views.WorkspaceExplorer.Configuration.ConfigurationTreeNodeCheck;
 
 namespace Tropical.AvatarForge
 {
@@ -17,6 +14,7 @@ namespace Tropical.AvatarForge
             //Main List
             menuList.list = target;
             menuList.enableSelection = true;
+            menuList.showHeader = true;
             menuList.OnElementHeader = (index, element) =>
             {
                 //Title
@@ -29,17 +27,19 @@ namespace Tropical.AvatarForge
                 var name = element.FindPropertyRelative("name").stringValue;
                 return EditorUtility.DisplayDialog("Delete Behaviour?", $"Delete the behaviour '{name}'?", "Delete", "Cancel");
             };
-            menuList.OnPreAdd = (element) =>
+            menuList.OnPreAdd = (list) =>
             {
-                var popup = new AddListItemPopup();
-                popup.list = target;
-                popup.size = new Vector2(150, 200);
-                popup.options = new AddListItemPopup.Option[]
+                var menu = new GenericMenu();
+                menu.AddItem(new GUIContent("Generic"), false, OnAdd, typeof(CustomBehaviour));
+                menu.AddItem(new GUIContent("Gestures"), false, OnAdd, typeof(Gestures.GestureItem));
+                void OnAdd(object obj)
                 {
-                    new AddListItemPopup.Option("Generic", typeof(CustomBehaviour)),
-                    new AddListItemPopup.Option("Gestures", typeof(Gestures.GestureItem)),
-                };
-                popup.Show();
+                    var type = (System.Type)obj;
+                    list.arraySize += 1;
+                    var element = list.GetArrayElementAtIndex(list.arraySize - 1);
+                    element.managedReferenceValue = System.Activator.CreateInstance(type);
+                }
+                menu.ShowAsContext();
 
                 return null;
             };
@@ -72,68 +72,6 @@ namespace Tropical.AvatarForge
             }
 
             EditorGUI.indentLevel -= 1;
-        }
-    }
-
-    public class AddListItemPopup : PopupWindowContent
-    {
-        public SerializedProperty list;
-        public Vector2 size;
-        Vector2 scrollPosition;
-        public System.Action<SerializedProperty, object> OnAdd;
-
-        public struct Option
-        {
-            public Option(string name, Type type)
-            {
-                this.name = name;
-                this.type = type;
-            }
-
-            public string name;
-            public Type type;
-        }
-        public Option[] options;
-
-        public override void OnGUI(Rect rect)
-        {
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-            EditorGUILayout.BeginVertical();
-
-            for(int i=0; i<options.Length; i++)
-            {
-                var option = options[i];
-                if(GUILayout.Button(option.name))
-                {
-                    //Create
-                    var item = Activator.CreateInstance(option.type);
-
-                    list.InsertArrayElementAtIndex(list.arraySize);
-                    var element = list.GetArrayElementAtIndex(list.arraySize - 1);
-                    element.managedReferenceValue = item;
-                    element.isExpanded = true;
-
-                    OnAdd?.Invoke(element, item);
-
-                    list.serializedObject.ApplyModifiedProperties();
-
-                    //Close
-                    editorWindow.Close();
-                }
-            }
-
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.EndScrollView();
-        }
-        public override Vector2 GetWindowSize()
-        {
-            return size;
-        }
-
-        public void Show()
-        {
-            var rect = new Rect(Event.current.mousePosition, Vector2.zero);
-            PopupWindow.Show(rect, this);
         }
     }
 

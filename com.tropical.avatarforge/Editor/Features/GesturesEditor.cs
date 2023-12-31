@@ -71,37 +71,11 @@ namespace Tropical.AvatarForge
                         return;
 
                     //Build generic behaviour item
-                    var buildItem = new BehaviourItem();
-                    item.CopyTo(buildItem);
-
-                    if(item.sides == Gestures.GestureItem.SideType.Either)
-                    {
-                        //Left trigger
-                        var trigger = new BehaviourItem.Trigger();
-                        trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureLeft, "", BehaviourItem.Condition.Logic.Equals, (int)item.left));
-                        buildItem.triggers.Add(trigger);
-
-                        //Right trigger
-                        trigger = new BehaviourItem.Trigger();
-                        trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureRight, "", BehaviourItem.Condition.Logic.Equals, (int)item.right));
-                        buildItem.triggers.Add(trigger);
-                    }
-                    else
-                    {
-                        //Combined trigger
-                        var trigger = new BehaviourItem.Trigger();
-                        if(item.sides != Gestures.GestureItem.SideType.Right)
-                            trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureLeft, "", BehaviourItem.Condition.Logic.Equals, (int)item.left));
-                        if(item.sides != Gestures.GestureItem.SideType.Left)
-                            trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureRight, "", BehaviourItem.Condition.Logic.Equals, (int)item.right));
-                        buildItem.triggers.Add(trigger);
-                    }
-
                     var controller = AvatarBuilder.GetController(layer);
                     if(layer == Globals.AnimationLayer.Action)
-                        AvatarBuilder.BuildActionLayer(controller, new BehaviourItem[] { buildItem }, $"Gesture_{item.sides}_{item.left}_{item.right}", null);
+                        AvatarBuilder.BuildActionLayer(controller, new BehaviourItem[] { item }, $"Gesture_{item.sides}_{item.left}_{item.right}", null);
                     else
-                        AvatarBuilder.BuildNormalLayer(controller, new BehaviourItem[] { buildItem }, $"Gesture_{item.sides}_{item.left}_{item.right}", layer, null);
+                        AvatarBuilder.BuildNormalLayer(controller, new BehaviourItem[] { item }, $"Gesture_{item.sides}_{item.left}_{item.right}", layer, null);
                 }
             }
         }

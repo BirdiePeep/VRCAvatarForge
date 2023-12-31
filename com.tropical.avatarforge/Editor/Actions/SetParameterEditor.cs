@@ -7,20 +7,20 @@ namespace Tropical.AvatarForge
 {
     public class SetParameterEditor : ActionEditor<SetParameter>
     {
-        ReorderablePropertyList listDrawer = new ReorderablePropertyList("Parameters", foldout: false, addName:"Parameter");
+        ReorderablePropertyList listDrawer = new ReorderablePropertyList(null, foldout: false, addName:"Parameter");
         public override void OnInspectorGUI()
         {
             listDrawer.list = target.FindPropertyRelative("parameters");
             listDrawer.OnElementHeader = (index, element) =>
             {
-                DrawSimpleParameterDropDown(element.FindPropertyRelative("parameter"), null, required:false);
-                EditorGUILayout.PropertyField(element.FindPropertyRelative("changeType"), GUIContent.none);
+                DrawSimpleParameterDropDown(element.FindPropertyRelative("parameter"), "Parameter", required:false);
 
                 return true;
             };
             listDrawer.OnElementBody = (index, element) =>
             {
                 var changeType = element.FindPropertyRelative("changeType");
+                EditorGUILayout.PropertyField(changeType);
                 var type = (VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType)changeType.intValue;
                 if(type == VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Random)
                 {
@@ -37,10 +37,6 @@ namespace Tropical.AvatarForge
                 }
                 EditorGUILayout.PropertyField(element.FindPropertyRelative("resetOnExit"));
             };
-            listDrawer.OnAdd = (element) =>
-            {
-                element.managedReferenceValue = new SetParameter.Parameter();
-            };
             listDrawer.OnInspectorGUI();
         }
 
@@ -48,8 +44,7 @@ namespace Tropical.AvatarForge
         public override void Apply(AnimatorController controller, AnimatorState state, AvatarBuilder.StateType stateType, Globals.AnimationLayer layerType)
         {
             var script = action as SetParameter;
-
-            if(script.parameters.Count == 0)
+            if(script.parameters == null || script.parameters.Length == 0)
                 return;
 
             //Apply

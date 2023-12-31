@@ -67,14 +67,19 @@ namespace Tropical.AvatarForge
             var setups = desc.gameObject.GetComponentsInChildren<AvatarForge>(true);
             foreach(var setup in setups)
             {
-                //Attach prefab
+                //Remove from the hierarchy before merging
+                setup.transform.SetParent(null, false);
+
+                //Add features
+                BuildFeatures.AddRange(setup.features);
+            }
+            foreach(var setup in setups)
+            {
+                //Attach prefab, this will delete setups
                 if(setup != actionsDesc)
                 {
                     AttachPrefab(setup.gameObject, AvatarDescriptor);
                 }
-
-                //Add features
-                BuildFeatures.AddRange(setup.features);
             }
 
             //Prebuilding can modify this container, so we need to use a for loop
@@ -433,7 +438,7 @@ namespace Tropical.AvatarForge
                     state.writeDefaultValues = useWriteDefaults;
 
                     //Transition
-                    AddTransitions(item, controller, waitingState, state, 0, BehaviourItem.Trigger.Type.Enter, parentAction);
+                    AddTransitions(item, controller, waitingState, state, 0, true, parentAction);
 
                     //Playable Layer
                     var playable = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCPlayableLayerControl>();
@@ -506,11 +511,11 @@ namespace Tropical.AvatarForge
                 //Disable state
                 {
                     var state = layer.stateMachine.AddState(item.name + "_Disable", StatePosition(4, itemIter));
-                    state.motion = GetAnimation(item, layerType, false);
+                    state.motion = GetAnimation(item, layerType, true);
                     state.writeDefaultValues = useWriteDefaults;
 
                     //Transition
-                    AddTransitions(item, controller, lastState, state, 0, BehaviourItem.Trigger.Type.Exit, parentAction);
+                    AddTransitions(item, controller, lastState, state, 0, false, parentAction);
 
                     //Playable Layer
                     var playable = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCPlayableLayerControl>();
@@ -528,7 +533,7 @@ namespace Tropical.AvatarForge
                 if(item.fadeOut > 0)
                 {
                     var state = layer.stateMachine.AddState(item.name + "_Fadeout", StatePosition(5, itemIter));
-                    state.motion = GetAnimation(item, layerType, false);
+                    state.motion = GetEmptyClip();//GetAnimation(item, layerType, false);
                     state.writeDefaultValues = useWriteDefaults;
 
                     //Transition
@@ -594,14 +599,16 @@ namespace Tropical.AvatarForge
             waitingState.writeDefaultValues = !turnOffState && useWriteDefaults;
 
             //Each action
+            int maxStatePosition = 1;
             int actionIter = 0;
             foreach(var action in actions)
             {
                 AnimatorState lastState = waitingState;
+                int statePosition = 1;
 
                 //Enable
                 {
-                    var state = layer.stateMachine.AddState(action.name + "_Enable", StatePosition(1, actionIter));
+                    var state = layer.stateMachine.AddState(action.name + "_Enable", StatePosition(statePosition++, actionIter));
                     state.motion = GetAnimation(action, layerType, true);
                     state.writeDefaultValues = useWriteDefaults;
                     if(!string.IsNullOrEmpty(action.timeParameter))
@@ -612,7 +619,7 @@ namespace Tropical.AvatarForge
                     }
 
                     //Transition
-                    AddTransitions(action, controller, lastState, state, action.fadeIn, BehaviourItem.Trigger.Type.Enter, parentAction);
+                    AddTransitions(action, controller, lastState, state, action.fadeIn, true, parentAction);
 
                     //Apply Actions
                     ApplyActionsToState(action, controller, state, StateType.Enable, layerType);
@@ -624,7 +631,7 @@ namespace Tropical.AvatarForge
                 //Hold
                 if(action.hold > 0)
                 {
-                    var state = layer.stateMachine.AddState(action.name + "_Hold", StatePosition(2, actionIter));
+                    var state = layer.stateMachine.AddState(action.name + "_Hold", StatePosition(statePosition++, actionIter));
                     state.motion = GetAnimation(action, layerType, true);
                     state.writeDefaultValues = useWriteDefaults;
                     if(!string.IsNullOrEmpty(action.timeParameter))
@@ -652,12 +659,12 @@ namespace Tropical.AvatarForge
                 {
                     //Disable
                     {
-                        var state = layer.stateMachine.AddState(action.name + "_Disable", StatePosition(3, actionIter));
-                        state.motion = GetAnimation(action, layerType, false);
+                        var state = layer.stateMachine.AddState(action.name + "_Disable", StatePosition(statePosition++, actionIter));
+                        state.motion = GetEmptyClip();
                         state.writeDefaultValues = useWriteDefaults;
 
                         //Transition
-                        AddTransitions(action, controller, lastState, state, 0, BehaviourItem.Trigger.Type.Exit, parentAction);
+                        AddTransitions(action, controller, lastState, state, action.fadeOut, false, parentAction);
 
                         //Apply Actions
                         ApplyActionsToState(action, controller, state, StateType.Disable, layerType);
@@ -667,9 +674,9 @@ namespace Tropical.AvatarForge
                     }
 
                     //Fadeout
-                    if(action.fadeOut > 0)
+                    /*if(action.fadeOut > 0)
                     {
-                        var state = layer.stateMachine.AddState(action.name + "_Fadeout", StatePosition(4, actionIter));
+                        var state = layer.stateMachine.AddState(action.name + "_Fadeout", StatePosition(statePosition++, actionIter));
                         state.writeDefaultValues = useWriteDefaults;
 
                         //Transition
@@ -683,12 +690,12 @@ namespace Tropical.AvatarForge
 
                         //Store
                         lastState = state;
-                    }
+                    }*/
 
                     //Cleanup
                     if(ActionAffectsState(action, StateType.Cleanup, layerType))
                     {
-                        var state = layer.stateMachine.AddState(action.name + "_Cleanup", StatePosition(5, actionIter));
+                        var state = layer.stateMachine.AddState(action.name + "_Cleanup", StatePosition(statePosition++, actionIter));
                         state.writeDefaultValues = useWriteDefaults;
 
                         //Transition
@@ -715,8 +722,12 @@ namespace Tropical.AvatarForge
                 }
 
                 //Iterate
+                maxStatePosition = Mathf.Max(maxStatePosition, statePosition);
                 actionIter += 1;
             }
+
+            //Exit
+            layer.stateMachine.exitPosition = StatePosition(maxStatePosition, 0);
         }
         public static void ApplyActionsToState(BehaviourItem baseAction, AnimatorController controller, AnimatorState state, StateType stateType, Globals.AnimationLayer layerType)
         {
@@ -1192,9 +1203,9 @@ namespace Tropical.AvatarForge
             if(AffectsLayer(behaviour, layer))
             {
                 if(enter)
-                    return FindOrGenerate(behaviour, behaviour.name + "_Generated", layer, enter);
+                    return FindOrGenerate(behaviour, behaviour.name, layer, enter);
                 else
-                    return FindOrGenerate(behaviour, behaviour.name + "_Generated_Exit", layer, enter);
+                    return FindOrGenerate(behaviour, behaviour.name + "_Exit", layer, enter);
             }
             else
                 return null;
@@ -1212,36 +1223,63 @@ namespace Tropical.AvatarForge
             }
             return false;
         }
-        static AnimationClip FindOrGenerate(BehaviourItem behaviour, string clipName, Globals.AnimationLayer layer, bool enter)
+
+        public static AnimationClip GetEmptyClip()
         {
+            AnimationClip clip;
+            if(!GeneratedClips.TryGetValue("_Empty", out clip))
+            {
+                clip = new AnimationClip();
+                clip.name = "_Empty";
+                SaveAsset(clip, AvatarForge.GetSaveDirectory(), "Generated");
+                GeneratedClips.Add(clip.name, clip);
+            }
+            return clip;
+        }
+
+        static AnimationClip FindOrGenerate(BehaviourItem behaviour, string clipName, Globals.AnimationLayer layer, bool isEnter)
+        {
+            clipName = $"{clipName}_{layer}";
             //Find/Generate
             AnimationClip generated = null;
-            if(AvatarBuilder.GeneratedClips.TryGetValue(clipName, out generated))
+            if(GeneratedClips.TryGetValue(clipName, out generated))
                 return generated;
             else
             {
                 //Generate
-                generated = BuildGeneratedAnimation(behaviour, clipName, layer, enter);
+                generated = BuildGeneratedAnimation(behaviour, clipName, layer, isEnter);
                 if(generated != null)
                 {
-                    AvatarBuilder.GeneratedClips.Add(clipName, generated);
+                    GeneratedClips.Add(clipName, generated);
                     return generated;
                 }
             }
             return null;
         }
-        static AnimationClip BuildGeneratedAnimation(BehaviourItem behaviour, string clipName, Globals.AnimationLayer layer, bool enter)
+        static AnimationClip BuildGeneratedAnimation(BehaviourItem behaviour, string clipName, Globals.AnimationLayer layer, bool isEnter)
         {
             try
             {
                 //Create new animation
                 AnimationClip animation = new AnimationClip();
+                bool isLooping = false;
                 foreach(var action in behaviour.actions)
                 {
                     //Apply action
                     var editor = ActionEditorBase.FindEditor(action);
                     if(editor != null)
-                        editor.Apply(animation, layer, enter);
+                    {
+                        editor.Apply(animation, layer, isEnter);
+                        isLooping = editor.RequiresAnimationLoop() ? true : isLooping;
+                    }
+                }
+
+                //Looping
+                if(isLooping)
+                {
+                    var data = new SerializedObject(animation);
+                    data.FindProperty("m_AnimationClipSettings.m_LoopTime").boolValue = true;
+                    data.ApplyModifiedProperties();
                 }
 
                 //Save
@@ -1258,17 +1296,16 @@ namespace Tropical.AvatarForge
                 return null;
             }
         }
-        static void AddTransitions(BehaviourItem behaviour, UnityEditor.Animations.AnimatorController controller, UnityEditor.Animations.AnimatorState lastState, UnityEditor.Animations.AnimatorState state, float transitionTime, BehaviourItem.Trigger.Type triggerType, ActionMenu.Control parentAction)
+        static void AddTransitions(BehaviourItem behaviour, UnityEditor.Animations.AnimatorController controller, UnityEditor.Animations.AnimatorState lastState, UnityEditor.Animations.AnimatorState state, float transitionTime, bool isEnter, ActionMenu.Control parentAction)
         {
             //Find valid triggers
             var triggers = new List<BehaviourItem.Trigger>();
-            foreach(var trigger in behaviour.triggers)
+            foreach(var trigger in behaviour.GetTriggers())
             {
-                if(trigger.type == triggerType)
+                if(isEnter ? trigger.HasEnter() : trigger.HasExit())
                     triggers.Add(trigger);
             }
-
-            bool controlEquals = (triggerType != BehaviourItem.Trigger.Type.Exit);
+            bool controlEquals = isEnter;
 
             //Add triggers
             if(triggers.Count > 0)
@@ -1283,10 +1320,10 @@ namespace Tropical.AvatarForge
                     AddConditions(behaviour, transition, controlEquals);
 
                     //Conditions
-                    AvatarBuilder.AddTriggerConditions(controller, transition, trigger.conditions);
+                    AvatarBuilder.AddTriggerConditions(controller, transition, trigger.GetConditions(isEnter));
 
                     //Parent Conditions - Enter
-                    if(triggerType == BehaviourItem.Trigger.Type.Enter && parentAction != null)
+                    if(isEnter && parentAction != null)
                         AddConditions(parentAction, transition, controlEquals);
 
                     //Finalize
@@ -1295,7 +1332,7 @@ namespace Tropical.AvatarForge
             }
             else
             {
-                if(triggerType == BehaviourItem.Trigger.Type.Enter)
+                if(isEnter)
                 {
                     //Add single transition
                     var transition = lastState.AddTransition(state);
@@ -1310,7 +1347,7 @@ namespace Tropical.AvatarForge
                     //Finalize
                     Finalize(transition);
                 }
-                else if(triggerType == BehaviourItem.Trigger.Type.Exit && behaviour.HasExit())
+                else if(behaviour.HasExit())
                 {
                     //Add single transition
                     var transition = lastState.AddTransition(state);
@@ -1324,7 +1361,7 @@ namespace Tropical.AvatarForge
             }
 
             //Parent Conditions - Exit
-            if(triggerType == BehaviourItem.Trigger.Type.Exit && parentAction != null)
+            if(!isEnter && parentAction != null)
             {
                 var transition = lastState.AddTransition(state);
                 transition.hasExitTime = false;

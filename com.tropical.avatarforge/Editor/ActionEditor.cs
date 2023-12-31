@@ -22,6 +22,7 @@ namespace Tropical.AvatarForge
         {
             return false;
         }
+        public virtual bool RequiresAnimationLoop() => false;
 
         //Factory
         public static List<string> editorNames;

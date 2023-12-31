@@ -30,8 +30,8 @@ namespace Tropical.AvatarForge
         static bool initialized = false;
         static GUIContent upArrow;
         static GUIContent downArrow;
-        static GUIStyle elementNormal;
-        static GUIStyle elementSelected;
+        //static GUIStyle elementNormal;
+        //static GUIStyle elementSelected;
         static GUIContent removeButton;
 
         GUIContent addButton;
@@ -76,13 +76,7 @@ namespace Tropical.AvatarForge
                 }
                 else
                     EditorGUILayout.LabelField(title);
-                //EditorGUI.indentLevel += 1;
             }
-
-            //GUILayout.Space(padding);
-            GUILayout.BeginHorizontal();
-            //GUILayout.Space(padding);
-            GUILayout.BeginVertical();
 
             //Draw elements
             if(list.arraySize == 0)
@@ -162,10 +156,11 @@ namespace Tropical.AvatarForge
             }
 
             //Footer
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            EditorGUI.BeginDisabledGroup(AllowAdd != null ? !AllowAdd.Invoke() : false);
-            if(GUILayout.Button(addButton, GUILayout.Width(128)))
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(-16);
+            bool addItem = GUILayout.Button(addButton, GUILayout.Height(24));
+            EditorGUILayout.EndHorizontal();
+            if(addItem)
             {
                 //Pre-Add
                 SerializedProperty element = null;
@@ -183,18 +178,6 @@ namespace Tropical.AvatarForge
                 if(OnAdd != null)
                     OnAdd.Invoke(element);
             }
-            EditorGUI.EndDisabledGroup();
-            GUILayout.EndHorizontal();
-
-            //GUILayout.Space(padding);
-            GUILayout.EndVertical();
-            //GUILayout.Space(padding);
-            GUILayout.EndHorizontal();
-
-            if(!string.IsNullOrEmpty(title))
-            {
-                //EditorGUI.indentLevel -= 1;
-            }
 
             //Apply
             list.serializedObject.ApplyModifiedProperties();
@@ -209,22 +192,33 @@ namespace Tropical.AvatarForge
         ElementAction DrawElement(int index, SerializedProperty element)
         {
             //Item Container
-            var itemRect = EditorGUILayout.BeginVertical();
-            GUILayout.Space(2);
-            itemRect = EditorGUI.IndentedRect(itemRect);
+            var elementRect = EditorGUILayout.BeginVertical();
+            elementRect = EditorGUI.IndentedRect(elementRect);
+            bool isMouseOver = elementRect.Contains(Event.current.mousePosition);
 
-            //Selected
-            bool isSelected = enableSelection && index == selectedElement;
-            EditorGUI.DrawRect(itemRect, isSelected ? selectColor : elementColor);
-
-            //Hover
-            bool isMouseOver = itemRect.Contains(Event.current.mousePosition);
-            if(isMouseOver && showHover)
+            if(Event.current.type == EventType.Repaint)
             {
-                //Hover Color
-                var rect = new Rect(itemRect);
-                rect.width = 4;
-                EditorGUI.DrawRect(rect, hoverColor);
+                //Background
+                {
+                    var rect = new Rect(elementRect);
+                    rect.x -= 16;
+                    rect.width += 16;
+                    backgroundStyle.Draw(rect, false, false, false, false);
+                }
+
+                //Selected
+                bool isSelected = enableSelection && index == selectedElement;
+                if(isSelected)
+                    EditorGUI.DrawRect(elementRect, selectColor);
+
+                //Hover
+                if(isMouseOver && showHover)
+                {
+                    //Hover Color
+                    var rect = new Rect(elementRect);
+                    rect.width = 4;
+                    EditorGUI.DrawRect(rect, hoverColor);
+                }
             }
 
             //Select
@@ -235,12 +229,18 @@ namespace Tropical.AvatarForge
             }
 
             //Header
-            var headerRect = EditorGUILayout.BeginHorizontal();
-            if(showHeader)
+            //showHeader = true;
+            var headerRect = EditorGUILayout.BeginVertical();
+            GUILayout.Space(4);
+            EditorGUILayout.BeginHorizontal();
+            if(showHeader && Event.current.type == EventType.Repaint)
             {
-                var rect = new Rect(headerRect);
-                EditorGUI.DrawRect(rect, headerColor);
+                var rect = EditorGUI.IndentedRect(headerRect);
+                rect.x -= 16;
+                rect.width += 16;
+                headerStyle.Draw(rect, false, false, false, false);
             }
+
             bool showBody = true;
             ElementAction action = ElementAction.None;
             {
@@ -277,7 +277,14 @@ namespace Tropical.AvatarForge
                     }
                 }
             }
+            GUILayout.Space(4);
             EditorGUILayout.EndHorizontal();
+            GUILayout.Space(4);
+            EditorGUILayout.EndVertical();
+
+            //Click header to expand
+            if(Event.current.type == EventType.MouseDown && Event.current.button == 0 && headerRect.Contains(Event.current.mousePosition))
+                element.isExpanded = !element.isExpanded;
 
             //Body
             if(OnElementBody != null && showBody)
@@ -287,7 +294,6 @@ namespace Tropical.AvatarForge
                 EditorBase.EndPaddedArea(padding);
             }
 
-            GUILayout.Space(2);
             EditorGUILayout.EndVertical();
 
             return action;
@@ -295,7 +301,9 @@ namespace Tropical.AvatarForge
 
         static Color hoverColor = new Color(1f, 1f, 1f, 0.3f);
         static Color selectColor = new Color(0.25f, 0.5f, 1.0f, 0.5f);
-        static Color elementColor = new Color(0f, 0f, 0f, 0.1f);
+        static GUIStyle headerStyle;
+        static GUIStyle backgroundStyle;
+        //static GUIContent headerStyle;
 
         void InitStyles()
         {
@@ -313,13 +321,19 @@ namespace Tropical.AvatarForge
             downArrow = new GUIContent(Resources.Load<Texture2D>("Icons/icon-arrow-down"));
             removeButton = new GUIContent(EditorGUIUtility.IconContent("Toolbar Minus"));
 
-            
+            //elementNormal = new GUIStyle();
+            //elementNormal.normal.background = EditorBase.MakeTex(1, 1, elementColor);
 
-            elementNormal = new GUIStyle();
-            elementNormal.normal.background = EditorBase.MakeTex(1, 1, elementColor);
+            //elementSelected = new GUIStyle();
+            //elementSelected.normal.background = EditorBase.MakeTex(1, 1, selectColor);
 
-            elementSelected = new GUIStyle();
-            elementSelected.normal.background = EditorBase.MakeTex(1, 1, selectColor);
+            headerStyle = new GUIStyle();
+            headerStyle.normal.background = Resources.Load<Texture2D>("box-header");
+            headerStyle.border = new RectOffset(5, 5, 5, 5);
+
+            backgroundStyle = new GUIStyle();
+            backgroundStyle.normal.background = Resources.Load<Texture2D>("box-background");
+            backgroundStyle.border = new RectOffset(5, 5, 5, 5);
         }
 
         //Selection

@@ -9,6 +9,7 @@ namespace Tropical.AvatarForge
         //State
         static AnimationRecorderProxy proxy;
         static Animator animator;
+        static bool removeAnimator;
         static UnityEngine.Object[] prevFocus;
 
         //Reflection
@@ -70,15 +71,14 @@ namespace Tropical.AvatarForge
             }
         }
 
+        
         static void Init(GameObject target, AnimationClip clip)
         {
             //Find animator
             var animator = target.GetComponent<Animator>();
+            removeAnimator = animator == null;
             if(animator == null)
-            {
-                Debug.LogError("Object doesn't have an Animator component");
-                return;
-            }
+                animator = target.AddComponent<Animator>();
 
             //Create recording object
             var obj = new GameObject("Recording");
@@ -138,6 +138,8 @@ namespace Tropical.AvatarForge
             AssetDatabase.SaveAssets();
 
             //Destroy
+            if(removeAnimator && animator != null)
+                GameObject.DestroyImmediate(animator);
             GameObject.DestroyImmediate(proxy.gameObject);
             proxy = null;
         }

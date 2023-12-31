@@ -82,8 +82,6 @@ namespace Tropical.AvatarForge
             public bool IsGroupDefault { get => defaultValue; set => defaultValue = value; }
             public bool IsGroupOffState { get => isOffState; set => isOffState = value; }
 
-            
-
             [Tooltip("This toggle be enabled by default.")]
             public bool defaultValue;
 

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using NUnit.Framework;
+using VRC.SDK3.Avatars.ScriptableObjects;
 
 namespace Tropical.AvatarForge
 {
@@ -53,11 +53,17 @@ namespace Tropical.AvatarForge
 
             InitStyles();
 
+            if(Application.isPlaying)
+            {
+                DrawRuntimeUI();
+                return;
+            }
+
             var rootComponent = PrefabUtility.GetCorrespondingObjectFromOriginalSource(setup);
             if(rootComponent != null)
             {
                 EditorGUILayout.HelpBox("You are viewing a prefab varient for this component, please modify the original component", MessageType.Warning);
-                if(GUILayout.Button("Open Original Prefab"))
+                if(GUILayout.Button("Open Original Prefab", GUILayout.Height(32)))
                 {
                     var path = AssetDatabase.GetAssetPath(rootComponent);
                     AssetDatabase.OpenAsset(AssetDatabase.LoadAssetAtPath(path, typeof(GameObject)));
@@ -191,6 +197,163 @@ namespace Tropical.AvatarForge
         {
             //Options
             EditorGUILayout.PropertyField(serializedObject.FindProperty("mergeOriginalAnimators"));
+        }
+
+        //Runtime
+        Stack<VRCExpressionsMenu> menuStack = new Stack<VRCExpressionsMenu>();
+        Stack<string> menuNameStack = new Stack<string>();
+        VRCExpressionsMenu currentMenu;
+        string currentMenuName;
+        Dictionary<int, AnimatorControllerParameter> paramsLookup;
+
+        void DrawRuntimeUI()
+        {
+            Styles.Init();
+
+            if(currentMenu == null)
+            {
+                menuStack.Clear();
+                menuNameStack.Clear();
+                currentMenu = setup.avatar?.expressionsMenu;
+                currentMenuName = null;
+            }
+            if(currentMenu == null)
+            {
+                EditorGUILayout.HelpBox("No VRCExpressionsMenu found", MessageType.Error);
+                return;
+            }
+
+            //Menu
+            if(menuStack.Count == 0)
+                GUILayout.Label("Menu: Root", GUILayout.ExpandWidth(true));
+            else
+                GUILayout.Label($"Menu: {currentMenuName}", GUILayout.ExpandWidth(true));
+
+            //Back
+            EditorGUI.BeginDisabledGroup(menuStack.Count == 0);
+            {
+                if(GUILayout.Button(Styles.contentBackButton, GUILayout.Height(32)))
+                {
+                    currentMenu = menuStack.Pop();
+                    currentMenuName = menuNameStack.Pop();
+                    Repaint();
+                }
+            }
+            EditorGUI.EndDisabledGroup();
+
+            var animator = setup.GetComponent<Animator>();
+            if(paramsLookup == null)
+            {
+                paramsLookup = new Dictionary<int, AnimatorControllerParameter>();
+                var parameters = animator.parameters;
+                foreach(var item in parameters)
+                {
+                    paramsLookup.Add(item.nameHash, item);
+                }
+            }
+
+            foreach(var control in currentMenu.controls)
+            {
+                if(control == null)
+                    continue;
+
+                EditorGUILayout.BeginHorizontal();
+
+                //Icon
+                var iconRect = GUILayoutUtility.GetRect(32, 32, GUILayout.Width(32));
+                GUI.DrawTexture(GUILayoutUtility.GetLastRect(), control.icon != null ? control.icon : Styles.iconActionBasic);
+
+                //Name
+                GUILayout.Label(control.name, new GUILayoutOption[] { GUILayout.Width(128), GUILayout.Height(32) } );
+                
+                //Control
+                switch(control.type)
+                {
+                    case VRCExpressionsMenu.Control.ControlType.SubMenu:
+                    {
+                        if(GUILayout.Button(control.name, GUILayout.Height(32)))
+                        {
+                            if(control.subMenu != null)
+                            {
+                                menuStack.Push(currentMenu);
+                                menuNameStack.Push(currentMenuName);
+                                currentMenu = control.subMenu;
+                                currentMenuName = control.name;
+                                Repaint();
+                            }
+                        }
+                        break;
+                    }
+                    case VRCExpressionsMenu.Control.ControlType.Toggle:
+                    {
+                        var value = FindControlValue(control.parameter.hash);
+                        bool isEnabled = value == control.value;
+                        if(GUILayout.Button(isEnabled ? "Enabled" : "Disabled", GUILayout.Height(32)))
+                        {
+                            SetControlValue(control.parameter.hash, isEnabled ? 0 : (int)control.value);
+                        }
+                        break;
+                    }
+                    case VRCExpressionsMenu.Control.ControlType.Button:
+                    {
+                        /*if(GUILayout.Button(isEnabled ? "Disable" : "Enable"))
+                        {
+                            animator.SetInteger(control.parameter.hash, isEnabled ? 0 : (int)control.value);
+                        }*/
+                        break;
+                    }
+                    case VRCExpressionsMenu.Control.ControlType.RadialPuppet:
+                    {
+                        var nameHash = control.subParameters[0].hash;
+                        var value = FindControlValue(nameHash);
+                        EditorGUI.BeginChangeCheck();
+                        value = EditorGUILayout.Slider(value, 0f, 1f);
+                        if(EditorGUI.EndChangeCheck())
+                        {
+                            SetControlValue(nameHash, value);
+                        }
+                        break;
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+
+            float FindControlValue(int nameHash)
+            {
+                AnimatorControllerParameter parameter;
+                if(paramsLookup.TryGetValue(nameHash, out parameter))
+                {
+                    switch(parameter.type)
+                    {
+                        case AnimatorControllerParameterType.Bool:
+                            return animator.GetBool(nameHash) ? 1f : 0f;
+                        case AnimatorControllerParameterType.Float:
+                            return animator.GetFloat(nameHash);
+                        case AnimatorControllerParameterType.Int:
+                            return animator.GetInteger(nameHash);
+                    }
+                }
+                return 0;
+            }
+            void SetControlValue(int nameHash, float value)
+            {
+                AnimatorControllerParameter parameter;
+                if(paramsLookup.TryGetValue(nameHash, out parameter))
+                {
+                    switch(parameter.type)
+                    {
+                        case AnimatorControllerParameterType.Bool:
+                            animator.SetBool(nameHash, value != 0f);
+                            break;
+                        case AnimatorControllerParameterType.Float:
+                            animator.SetFloat(nameHash, value);
+                            break;
+                        case AnimatorControllerParameterType.Int:
+                            animator.SetInteger(nameHash, (int)value);
+                            break;
+                    }
+                }
+            }
         }
     }
 }

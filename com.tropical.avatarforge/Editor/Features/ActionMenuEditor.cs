@@ -67,16 +67,18 @@ namespace Tropical.AvatarForge
         //Options
         public override void Inspector_Body()
         {
+            Styles.Init();
+
+            //Menu
+            GUILayout.Label($"Menu: {parentName}");
+
             //Back
-            EditorGUILayout.BeginHorizontal();
             EditorGUI.BeginDisabledGroup(parentMenu == null);
-            if(GUILayout.Button("Back", GUILayout.Width(128)))
+            if(GUILayout.Button(Styles.contentBackButton, GUILayout.Height(32)))
             {
                 SetSelectedMenu(parentMenu);
             }
             EditorGUI.EndDisabledGroup();
-            GUILayout.Label($"Menu: {parentName}");
-            EditorGUILayout.EndHorizontal();
 
             //Main List
             menuList.list = selectedMenu.FindPropertyRelative("controls");
@@ -230,6 +232,12 @@ namespace Tropical.AvatarForge
                 foreach(var control in controls)
                     control.IsGroupDefault = control == value;
             }
+            public void SetOffState(IGroupedControl value)
+            {
+                offState = value;
+                foreach(var control in controls)
+                    control.IsGroupOffState = control == value;
+            }
         }
 
         HashSet<ValueTuple<string, System.Type>> controlGroups = new HashSet<ValueTuple<string, Type>>();
@@ -304,35 +312,9 @@ namespace Tropical.AvatarForge
 
         void DrawControlGroup(SerializedProperty property)
         {
-            /*if(GUILayout.Button(!string.IsNullOrEmpty(property.stringValue) ? property.stringValue : "[None]"))
-            {
-                var menu = new GenericMenu();
-                menu.AddItem(new GUIContent("[None]"), string.IsNullOrEmpty(property.stringValue), () =>
-                {
-                    property.stringValue = string.Empty;
-                    property.serializedObject.ApplyModifiedProperties();
-                });
-                var controlGroups = target.FindPropertyRelative("controlGroups");
-                for(int i=0; i<controlGroups.arraySize; i++)
-                {
-                    var group = controlGroups.GetArrayElementAtIndex(i);
-                    var name = group.FindPropertyRelative("name");
-                    menu.AddItem(new GUIContent(name.stringValue), name.stringValue == property.stringValue, () =>
-                    {
-                        property.stringValue = name.stringValue;
-                        property.serializedObject.Update();
-                    });
-                }
-                menu.AddItem(new GUIContent("[New Group]"), false, () =>
-                {
-                    property.stringValue = InputDialogWindow.ShowDialog("New Toggle Group", "Input New Toggle Group Name");
-                    property.serializedObject.ApplyModifiedProperties();
-                });
-                menu.ShowAsContext();
-            }*/
-
             var groupName = property.FindPropertyRelative("group");
             var controlGroup = FindControlGroup(groupName.stringValue);
+            var control = (Control)property.managedReferenceValue;
 
             EditorGUILayout.BeginHorizontal();
 
@@ -351,12 +333,10 @@ namespace Tropical.AvatarForge
 
             EditorGUILayout.EndHorizontal();
 
-            //Default value
+            EditorGUI.indentLevel += 1;
             if(!string.IsNullOrEmpty(groupName.stringValue))
             {
-                var control = (Control)property.managedReferenceValue;
-
-                //Button
+                //Default Value
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.PrefixLabel("Default On");
                 if(GUILayout.Button(controlGroup.defaultControl != null ? ((Control)controlGroup.defaultControl).name : "[None]"))
@@ -382,9 +362,33 @@ namespace Tropical.AvatarForge
                 }
                 EditorGUILayout.EndHorizontal();
 
-                //IsOffState
-                //toggles.isOffState = EditorGUILayout.Toggle("Is Off State", toggles.isOffState);
+                //Off state
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.PrefixLabel("Off State");
+                if(GUILayout.Button(controlGroup.offState != null ? ((Control)controlGroup.offState).name : "[None]"))
+                {
+                    var menu = new GenericMenu();
+                    menu.AddItem(new GUIContent("[None]"), controlGroup.offState == null, () =>
+                    {
+                        controlGroup.SetOffState(null);
+                        property.serializedObject.Update();
+                        EditorUtility.SetDirty(property.serializedObject.targetObject);
+                    });
+                    foreach(var item in controlGroup.controls)
+                    {
+                        var groupControl = item as Control;
+                        menu.AddItem(new GUIContent(groupControl.name), controlGroup.offState == item, () =>
+                        {
+                            controlGroup.SetOffState(item);
+                            property.serializedObject.Update();
+                            EditorUtility.SetDirty(property.serializedObject.targetObject);
+                        });
+                    }
+                    menu.ShowAsContext();
+                }
+                EditorGUILayout.EndHorizontal();
             }
+            EditorGUI.indentLevel -= 1;
         }
 
         public override string helpURL => "";

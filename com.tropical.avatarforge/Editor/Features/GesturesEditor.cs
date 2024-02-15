@@ -19,7 +19,6 @@ namespace Tropical.AvatarForge
                     var left = element.FindPropertyRelative("left");
                     var right = element.FindPropertyRelative("right");
 
-                    GUILayout.Space(16);
                     element.isExpanded = EditorGUILayout.Foldout(element.isExpanded, "Gesture");
 
                     //GUILayout.Label("Sides", GUILayout.Width(45));
@@ -52,6 +51,10 @@ namespace Tropical.AvatarForge
                 actionEditor.setup = setup;
                 actionEditor.OnInspectorGUI();
             };
+            gestureList.OnAdd = (element) =>
+            {
+                element.FindPropertyRelative("options").ClearArray();
+            };
             gestureList.OnInspectorGUI();
         }
 
@@ -71,11 +74,12 @@ namespace Tropical.AvatarForge
                         return;
 
                     //Build generic behaviour item
+                    item.name = $"Gesture_{item.sides}_{item.left}_{item.right}";
                     var controller = AvatarBuilder.GetController(layer);
                     if(layer == Globals.AnimationLayer.Action)
-                        AvatarBuilder.BuildActionLayer(controller, new BehaviourItem[] { item }, $"Gesture_{item.sides}_{item.left}_{item.right}", null);
+                        AvatarBuilder.BuildActionLayer(controller, new ActionItem[] { item }, item.name, null);
                     else
-                        AvatarBuilder.BuildNormalLayer(controller, new BehaviourItem[] { item }, $"Gesture_{item.sides}_{item.left}_{item.right}", layer, null);
+                        AvatarBuilder.BuildNormalLayer(controller, new ActionItem[] { item }, item.name, layer, null);
                 }
             }
         }

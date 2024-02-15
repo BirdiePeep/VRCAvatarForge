@@ -26,6 +26,7 @@ namespace Tropical.AvatarForge
         public System.Action<SerializedProperty> OnAdd;         //Once an item is added, call this
         public System.Action<SerializedProperty> OnRemove;
         public bool disableReorder;
+        public bool largeAddButton;
 
         static bool initialized = false;
         static GUIContent upArrow;
@@ -36,7 +37,7 @@ namespace Tropical.AvatarForge
 
         GUIContent addButton;
 
-        public ReorderablePropertyList(string title, bool foldout=true, string addName=null)
+        public ReorderablePropertyList(string title, bool foldout=true, string addName=null, bool largeAddButton = false)
         {
             this.title = title;
             this.foldout = foldout;
@@ -48,6 +49,7 @@ namespace Tropical.AvatarForge
             this.padding = 12;
             this.addName = addName;
             this.addButton = null;
+            this.largeAddButton = largeAddButton;
 
             this.list = null;
             this.OnElementHeader = null;
@@ -157,8 +159,17 @@ namespace Tropical.AvatarForge
 
             //Footer
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(-16);
-            bool addItem = GUILayout.Button(addButton, GUILayout.Height(24));
+            bool addItem = false;
+            if(largeAddButton)
+            {
+                GUILayout.Space(-16);
+                addItem = GUILayout.Button(addButton, GUILayout.Height(24));
+            }
+            else
+            {
+                GUILayout.FlexibleSpace();
+                addItem = GUILayout.Button(addButton, new GUILayoutOption[] { GUILayout.MinWidth(128), GUILayout.Height(24) });
+            }
             EditorGUILayout.EndHorizontal();
             if(addItem)
             {

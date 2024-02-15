@@ -5,18 +5,18 @@ using UnityEngine;
 namespace Tropical.AvatarForge
 {
     [Serializable]
-    public class ActionMenu : BehaviourGroup
+    public class ActionMenu : Feature
     {
         //Editor
         public string selectedMenuPath;
 
         [Serializable]
-        public abstract class Control : BehaviourItem
+        public abstract class Control : ActionItem
         {
             public Texture2D icon;
             public string parameter;
             
-            [SerializeReference] public List<NonMenuBehaviours> subActions = new List<NonMenuBehaviours>();
+            [SerializeReference] public List<NonMenuActions> subActions = new List<NonMenuActions>();
             
             //Meta
             public int controlValue = 0;
@@ -24,7 +24,7 @@ namespace Tropical.AvatarForge
 
             public virtual bool IsNormalAction() { return true; }
             public virtual bool NeedsControlLayer() { return true; }
-            public override void CopyTo(BehaviourItem clone)
+            public override void CopyTo(ActionItem clone)
             {
                 base.CopyTo(clone);
 
@@ -41,7 +41,7 @@ namespace Tropical.AvatarForge
                         menuClone.subActions.Add(item);
                 }
             }
-            public virtual void DeepCopyTo(BehaviourItem clone)
+            public virtual void DeepCopyTo(ActionItem clone)
             {
                 CopyTo(clone);
             }
@@ -88,7 +88,7 @@ namespace Tropical.AvatarForge
             [Tooltip("This toggle will be enabled when no other toggle with the same group is turned on.")]
             public bool isOffState = false;
 
-            public override void CopyTo(BehaviourItem clone)
+            public override void CopyTo(ActionItem clone)
             {
                 base.CopyTo(clone);
                 if(clone is Toggle toggle)
@@ -110,7 +110,7 @@ namespace Tropical.AvatarForge
             [Range(0, 1)] public float defaultValue;
 
             public override bool IsNormalAction() { return false; }
-            public override void CopyTo(BehaviourItem clone)
+            public override void CopyTo(ActionItem clone)
             {
                 base.CopyTo(clone);
                 if(clone is Slider slider)
@@ -127,7 +127,7 @@ namespace Tropical.AvatarForge
 
             public override bool IsNormalAction() { return false; }
             public override bool NeedsControlLayer() { return false; }
-            public override void CopyTo(BehaviourItem clone)
+            public override void CopyTo(ActionItem clone)
             {
                 base.CopyTo(clone);
                 if(clone is SubMenu subMenu)
@@ -135,7 +135,7 @@ namespace Tropical.AvatarForge
                     subMenu.subMenu = this.subMenu;
                 }
             }
-            public override void DeepCopyTo(BehaviourItem clone)
+            public override void DeepCopyTo(ActionItem clone)
             {
                 base.DeepCopyTo(clone);
 

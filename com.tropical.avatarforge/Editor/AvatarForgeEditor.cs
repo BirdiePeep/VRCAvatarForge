@@ -117,7 +117,7 @@ namespace Tropical.AvatarForge
         }
 
         //Features
-        ReorderablePropertyList featureList = new ReorderablePropertyList(null, foldout: false, addName:"Feature");
+        ReorderablePropertyList featureList = new ReorderablePropertyList(null, foldout: false, addName:"Feature", largeAddButton: true);
         void DrawFeatures()
         {
             FeatureEditorBase.InitEditors();
@@ -205,6 +205,8 @@ namespace Tropical.AvatarForge
         VRCExpressionsMenu currentMenu;
         string currentMenuName;
         Dictionary<int, AnimatorControllerParameter> paramsLookup;
+
+        bool rawParamsFoldout = false;
 
         void DrawRuntimeUI()
         {
@@ -318,6 +320,51 @@ namespace Tropical.AvatarForge
                 EditorGUILayout.EndHorizontal();
             }
 
+            //Draw misc avatar parameters
+            rawParamsFoldout = EditorGUILayout.Foldout(rawParamsFoldout, "Raw Parameters");
+            if(rawParamsFoldout)
+            {
+                foreach(var param in animator.parameters)
+                {
+                    switch(param.type)
+                    {
+                        case AnimatorControllerParameterType.Bool:
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            bool value = FindControlValue(param.nameHash) != 0;
+                            value = EditorGUILayout.Toggle(param.name, value);
+                            if(EditorGUI.EndChangeCheck())
+                            {
+                                SetControlValue(param.nameHash, value ? 1f : 0f);
+                            }
+                            break;
+                        }
+                        case AnimatorControllerParameterType.Int:
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            int value = (int)FindControlValue(param.nameHash);
+                            value = EditorGUILayout.IntField(param.name, value);
+                            if(EditorGUI.EndChangeCheck())
+                            {
+                                SetControlValue(param.nameHash, value);
+                            }
+                            break;
+                        }
+                        case AnimatorControllerParameterType.Float:
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            float value = FindControlValue(param.nameHash);
+                            value = EditorGUILayout.FloatField(param.name, value);
+                            if(EditorGUI.EndChangeCheck())
+                            {
+                                SetControlValue(param.nameHash, value);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
             float FindControlValue(int nameHash)
             {
                 AnimatorControllerParameter parameter;
@@ -352,6 +399,16 @@ namespace Tropical.AvatarForge
                             animator.SetInteger(nameHash, (int)value);
                             break;
                     }
+                }
+            }
+            void DrawParamBool(int hash, string label)
+            {
+                EditorGUI.BeginChangeCheck();
+                bool value = FindControlValue(hash) != 0;
+                value = EditorGUILayout.Toggle(label, value);
+                if(EditorGUI.EndChangeCheck())
+                {
+                    SetControlValue(hash, value ? 1f : 0f);
                 }
             }
         }

@@ -7,27 +7,27 @@ namespace Tropical.AvatarForge
     {
         public System.Action OnOptions;
 
-        BehaviourItem behaviour;
-        ReorderablePropertyList actionList = new ReorderablePropertyList(null, foldout: false, addName:"Option");
+        ActionItem behaviour;
+        ReorderablePropertyList optionsList = new ReorderablePropertyList(null, foldout: false, addName:"Option");
         public override void Inspector_Body()
         {
-            behaviour = (BehaviourItem)GetManagedReferenceValue(target);
+            behaviour = (ActionItem)GetManagedReferenceValue(target);
 
             //Options
             OnOptions?.Invoke();
 
             //Timing
             var foldoutTiming = target.FindPropertyRelative("foldoutTiming");
-            if(BeginCategory("Timing", foldoutTiming))
-                DrawTiming();
-            EndCategory();
+            //if(BeginCategory("Timing", foldoutTiming))
+            DrawTiming();
+            //EndCategory();
 
             //Actions
             ActionEditorBase.InitEditors();
-            actionList.list = target.FindPropertyRelative("actions");
-            actionList.headerColor = AvatarForgeEditor.SubHeaderColor;
-            actionList.showHeader = true;
-            actionList.OnPreAdd = (list) =>
+            optionsList.list = target.FindPropertyRelative("options");
+            optionsList.headerColor = AvatarForgeEditor.SubHeaderColor;
+            optionsList.showHeader = true;
+            optionsList.OnPreAdd = (list) =>
             {
                 var menu = new GenericMenu();
                 for(int i = 0; i < ActionEditorBase.editorTypes.Count; i++)
@@ -45,9 +45,9 @@ namespace Tropical.AvatarForge
 
                 return null;
             };
-            actionList.OnElementHeader = (index, element) =>
+            optionsList.OnElementHeader = (index, element) =>
             {
-                var action = (Action)GetManagedReferenceValue(element);
+                var action = (ActionOption)GetManagedReferenceValue(element);
                 var editor = ActionEditorBase.FindEditor(action);
                 if(editor == null)
                 {
@@ -61,9 +61,9 @@ namespace Tropical.AvatarForge
 
                 return element.isExpanded;
             };
-            actionList.OnElementBody = (index, element) =>
+            optionsList.OnElementBody = (index, element) =>
             {
-                var action = (Action)GetManagedReferenceValue(element);
+                var action = (ActionOption)GetManagedReferenceValue(element);
 
                 ActionEditorBase editor = ActionEditorBase.FindEditor(action);
                 if(editor != null)
@@ -75,32 +75,28 @@ namespace Tropical.AvatarForge
                     editor.OnInspectorGUI();
                 }
             };
-            actionList.OnInspectorGUI();
+            optionsList.OnInspectorGUI();
         }
 
         void DrawTiming()
         {
             EditorGUILayout.BeginHorizontal();
             {
-                EditorGUILayout.PrefixLabel("Fade");
+                EditorGUILayout.PrefixLabel("Timing");
 
-                EditorGUIUtility.labelWidth = 40;
                 var indent = EditorGUI.indentLevel;
                 EditorGUI.indentLevel = 0;
 
-                //GUILayout.Label("In", GUILayout.Width(48));
-                EditorGUILayout.PropertyField(target.FindPropertyRelative("fadeIn"), new GUIContent("In"));
-                //GUILayout.Label("Hold", GUILayout.Width(48));
-                EditorGUILayout.PropertyField(target.FindPropertyRelative("hold"), new GUIContent("Hold"));
-                //GUILayout.Label("Out", GUILayout.Width(48));
-                EditorGUILayout.PropertyField(target.FindPropertyRelative("fadeOut"), new GUIContent("Out"));
+                GUILayout.Label("Fade In");
+                EditorGUILayout.PropertyField(target.FindPropertyRelative("fadeIn"), GUIContent.none);
+                GUILayout.Label("Hold");
+                EditorGUILayout.PropertyField(target.FindPropertyRelative("hold"), GUIContent.none);
+                GUILayout.Label("Fade Out");
+                EditorGUILayout.PropertyField(target.FindPropertyRelative("fadeOut"), GUIContent.none);
 
-                EditorGUIUtility.labelWidth = 0;
                 EditorGUI.indentLevel = indent;
             }
             EditorGUILayout.EndHorizontal();
-
-            DrawParameterDropDown(target.FindPropertyRelative("timeParameter"), "Time Parameter", required:false);
         }
     }
 }

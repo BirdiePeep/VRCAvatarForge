@@ -8,8 +8,8 @@ namespace Tropical.AvatarForge
     public abstract class ActionEditorBase : EditorBase
     {
         public string displayName;
-        public BehaviourItem behaviour;
-        public abstract void SetAction(Action action);
+        public ActionItem behaviour;
+        public abstract void SetAction(ActionOption action);
 
         //Building
         public virtual void Apply(AnimationClip animation, Globals.AnimationLayer layer, bool isEnter) { }
@@ -40,7 +40,7 @@ namespace Tropical.AvatarForge
             {
                 foreach(var type in assembly.GetTypes())
                 {
-                    if(type.IsSubclassOf(typeof(Action)) && !type.IsAbstract)
+                    if(type.IsSubclassOf(typeof(ActionOption)) && !type.IsAbstract)
                     {
                         var displayName = Regex.Replace(type.Name, "([a-z])([A-Z])", "$1 $2");
                         editorTypes.Add(type);
@@ -55,7 +55,7 @@ namespace Tropical.AvatarForge
                 }
             }
         }
-        public static ActionEditorBase FindEditor(Action action)
+        public static ActionEditorBase FindEditor(ActionOption action)
         {
             if(action == null)
                 return null;
@@ -85,10 +85,10 @@ namespace Tropical.AvatarForge
             return null;
         }
     }
-    public abstract class ActionEditor<TYPE> : ActionEditorBase where TYPE : Action
+    public abstract class ActionEditor<TYPE> : ActionEditorBase where TYPE : ActionOption
     {
         protected TYPE action;
-        public override void SetAction(Action action)
+        public override void SetAction(ActionOption action)
         {
             this.action = action as TYPE;
         }

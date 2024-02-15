@@ -3,10 +3,10 @@
 namespace Tropical.AvatarForge
 {
     [System.Serializable]
-    public class Gestures : BehaviourGroup
+    public class Gestures : Feature
     {
         [System.Serializable]
-        public class GestureItem : CustomBehaviour
+        public class GestureItem : CustomAction
         {
             public enum SideType
             {
@@ -71,32 +71,43 @@ namespace Tropical.AvatarForge
 
             public override IEnumerable<Trigger> GetTriggers()
             {
-                if(sides == SideType.Either)
-                {
-                    //Left trigger
-                    var trigger = new BehaviourItem.Trigger();
-                    trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureLeft, "", BehaviourItem.Condition.Logic.Equals, (int)left));
-                    yield return trigger;
-
-                    //Right trigger
-                    trigger = new BehaviourItem.Trigger();
-                    trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureRight, "", BehaviourItem.Condition.Logic.Equals, (int)right));
-                    yield return trigger;
-                }
-                else
-                {
-                    //Combined trigger
-                    var trigger = new BehaviourItem.Trigger();
-                    if(sides != SideType.Right)
-                        trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureLeft, "", BehaviourItem.Condition.Logic.Equals, (int)left));
-                    if(sides != SideType.Left)
-                        trigger.conditions.Add(new BehaviourItem.Condition(Globals.ParameterEnum.GestureRight, "", BehaviourItem.Condition.Logic.Equals, (int)right));
-                    yield return trigger;
-                }
-
-                //Base
+                bool hadTriggers = false;
                 foreach(var item in base.GetTriggers())
-                    yield return item;
+                {
+                    hadTriggers = true;
+                    foreach(var trigger in AddConditions(item))
+                        yield return trigger;
+                }
+                if(!hadTriggers)
+                {
+                    foreach(var trigger in AddConditions(new Trigger()))
+                        yield return trigger;
+                }
+                IEnumerable<Trigger> AddConditions(ActionItem.Trigger parent)
+                {
+                    if(sides == SideType.Either)
+                    {
+                        //Left trigger
+                        var trigger = new ActionItem.Trigger(parent);
+                        trigger.conditions.Add(new ActionItem.Condition(Globals.ParameterEnum.GestureLeft, "", ActionItem.Condition.Logic.Equals, (int)left));
+                        yield return trigger;
+
+                        //Right trigger
+                        trigger = new ActionItem.Trigger(parent);
+                        trigger.conditions.Add(new ActionItem.Condition(Globals.ParameterEnum.GestureRight, "", ActionItem.Condition.Logic.Equals, (int)right));
+                        yield return trigger;
+                    }
+                    else
+                    {
+                        //Combined trigger
+                        var trigger = new ActionItem.Trigger(parent);
+                        if(sides != SideType.Right)
+                            trigger.conditions.Add(new ActionItem.Condition(Globals.ParameterEnum.GestureLeft, "", ActionItem.Condition.Logic.Equals, (int)left));
+                        if(sides != SideType.Left)
+                            trigger.conditions.Add(new ActionItem.Condition(Globals.ParameterEnum.GestureRight, "", ActionItem.Condition.Logic.Equals, (int)right));
+                        yield return trigger;
+                    }
+                }
             }
         }
         public List<GestureItem> gestures = new List<GestureItem>();

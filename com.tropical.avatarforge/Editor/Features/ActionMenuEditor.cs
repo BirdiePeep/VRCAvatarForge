@@ -794,25 +794,32 @@ namespace Tropical.AvatarForge
         }
         static string GenerateUniqueParameter(string paramName, List<VRCExpressionParameters.Parameter> allParameters)
         {
+            //Check if unique
+            if(!FindParam(paramName))
+                return paramName;
+
             //Attempt to create unique parameter name
             for(int i = 0; i < 100; i++)
             {
-                var name = $"{paramName} [{UnityEngine.Random.Range(0, 10)}{UnityEngine.Random.Range(0, 10)}{UnityEngine.Random.Range(0, 10)}{UnityEngine.Random.Range(0, 10)}]";
+                var name = $"{paramName}_{i}";
 
                 //Check if unique
-                bool found = false;
+                if(FindParam(name))
+                    continue;
+
+                return name;
+            }
+
+            bool FindParam(string name)
+            {
                 foreach(var other in allParameters)
                 {
                     if(other.name == name)
                     {
-                        found = true;
-                        break;
+                        return true;
                     }
                 }
-                if(found)
-                    continue;
-
-                return name;
+                return false;
             }
 
             //Error

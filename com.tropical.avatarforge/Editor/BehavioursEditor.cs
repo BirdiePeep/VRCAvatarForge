@@ -30,7 +30,7 @@ namespace Tropical.AvatarForge
             menuList.OnPreAdd = (list) =>
             {
                 var menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Generic"), false, OnAdd, typeof(CustomBehaviour));
+                menu.AddItem(new GUIContent("Generic"), false, OnAdd, typeof(CustomAction));
                 menu.AddItem(new GUIContent("Gestures"), false, OnAdd, typeof(Gestures.GestureItem));
                 void OnAdd(object obj)
                 {

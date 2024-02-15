@@ -53,6 +53,7 @@ namespace Tropical.AvatarForge
             VRMode = 1291,
             TrackingType = 9993,
             MuteSelf = 1566,
+            Earmuffs = 4422,
             AngularY = 5775,
             VelocityX = 6015,
             VelocityY = 1208,
@@ -62,6 +63,7 @@ namespace Tropical.AvatarForge
             Seated = 1173,
             InStation = 1247,
             IsLocal = 7648,
+            IsOnFriendsList = 6893,
         }
         public enum ParameterType
         {

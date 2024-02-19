@@ -617,7 +617,7 @@ namespace Tropical.AvatarForge
             {
                 //Record old controls
                 var oldControls = expressionsMenu.controls.ToArray();
-                if(!AvatarBuilder.AvatarSetup.mergeOriginalAnimators)
+                if(!AvatarBuilder.AvatarSetup.mergeAnimators)
                     expressionsMenu.controls.Clear();
 
                 //Check size

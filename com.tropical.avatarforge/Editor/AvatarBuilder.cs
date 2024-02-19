@@ -1,9 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using static Tropical.AvatarForge.AnimationController;
 
 namespace Tropical.AvatarForge
 {
@@ -129,89 +132,12 @@ namespace Tropical.AvatarForge
         {
             //BaseAction Controller
             AvatarDescriptor.customizeAnimationLayers = true;
-            ActionController = GetController(VRCAvatarDescriptor.AnimLayerType.Action, "AnimationController_Action");
-            FxController = GetController(VRCAvatarDescriptor.AnimLayerType.FX, "AnimationController_FX");
-            Animator.runtimeAnimatorController = FxController;
-
-            AnimatorController GetController(VRCAvatarDescriptor.AnimLayerType animLayerType, string name)
-            {
-                //Find desc layer
-                var descLayer = new VRCAvatarDescriptor.CustomAnimLayer();
-                int descLayerIndex = 0;
-                foreach(var layer in AvatarDescriptor.baseAnimationLayers)
-                {
-                    if(layer.type == animLayerType)
-                    {
-                        descLayer = layer;
-                        break;
-                    }
-                    descLayerIndex++;
-                }
-
-                //Find/Create Layer
-                var controller = descLayer.animatorController as UnityEditor.Animations.AnimatorController;
-                if(controller == null || descLayer.isDefault)
-                {
-                    //Dir Path
-                    var dirPath = AvatarForge.GetSaveDirectory();
-                    dirPath = $"{dirPath}/Generated";
-                    System.IO.Directory.CreateDirectory(dirPath);
-
-                    //Create
-                    var path = $"{dirPath}/{name}.controller";
-                    controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(path);
-
-                    //Add base layer
-                    controller.AddLayer("Base Layer");
-
-                    //Save
-                    descLayer.animatorController = controller;
-                    descLayer.isDefault = false;
-                    AvatarDescriptor.baseAnimationLayers[descLayerIndex] = descLayer;
-                    EditorUtility.SetDirty(AvatarDescriptor);
-                }
-
-                //Cleanup Layers
-                {
-                    //Clean layers
-                    for(int i = 0; i < controller.layers.Length; i++)
-                    {
-                        if(controller.layers[i].name == "Base Layer")
-                            continue;
-
-                        //Remove
-                        controller.RemoveLayer(i);
-                        i--;
-                    }
-
-                    //Clean parameters
-                    for(int i = 0; i < controller.parameters.Length; i++)
-                    {
-                        //Remove
-                        controller.RemoveParameter(i);
-                        i--;
-                    }
-                }
-
-                //Add defaults
-                AddParameter(controller, "True", AnimatorControllerParameterType.Bool, 1);
-
-                //Return
-                return controller;
-            }
+            ActionController = CreateController(VRCAvatarDescriptor.AnimLayerType.Action, "AnimationController_Action");
+            FxController = CreateController(VRCAvatarDescriptor.AnimLayerType.FX, "AnimationController_FX");
+            Animator.runtimeAnimatorController = null;
 
             //Delete all generated animations
             GeneratedClips.Clear();
-            /*{
-                var dirPath = AssetDatabase.GetAssetPath(ActionsDescriptor.ReturnAnyScriptableObject());
-                dirPath = dirPath.Replace(Path.GetFileName(dirPath), $"Generated/");
-                var files = System.IO.Directory.GetFiles(dirPath);
-                foreach (var file in files)
-                {
-                    if (file.Contains("_Generated"))
-                        System.IO.File.Delete(file);
-                }
-            }*/
 
             //Parameters
             InitExpressionMenu();
@@ -230,7 +156,10 @@ namespace Tropical.AvatarForge
             //Save Parameters
             {
                 //Expression Parameters
-                AvatarDescriptor.expressionParameters.parameters = BuildParameters.ToArray();
+                var buildParams = BuildParameters.ToArray();
+                if(AvatarDescriptor.expressionParameters?.parameters != null && AvatarDescriptor.customExpressions && AvatarSetup.mergeAnimators)
+                    ArrayUtility.AddRange(ref buildParams, AvatarDescriptor.expressionParameters.parameters);
+                AvatarDescriptor.expressionParameters.parameters = buildParams;
 
                 //Controllers
                 AddParameters(Globals.AnimationLayer.Action);
@@ -267,6 +196,9 @@ namespace Tropical.AvatarForge
                 EditorUtility.SetDirty(AvatarDescriptor.expressionParameters);
             }
 
+            //Apply animator
+            Animator.runtimeAnimatorController = FxController;
+
             //Save prefab
             AssetDatabase.SaveAssets();
 
@@ -274,16 +206,98 @@ namespace Tropical.AvatarForge
             //GameObject.DestroyImmediate(ActionsDescriptor.gameObject);
         }
 
+        //Controllers
+        static AnimatorController CreateController(VRCAvatarDescriptor.AnimLayerType animLayerType, string name)
+        {
+            //Define layer
+            var descLayer = new VRCAvatarDescriptor.CustomAnimLayer();
+            descLayer.mask = null;
+            descLayer.isDefault = false;
+            descLayer.type = animLayerType;
+
+            //Find layer index
+            int descLayerIndex = 0;
+            foreach(var layer in AvatarDescriptor.baseAnimationLayers)
+            {
+                if(layer.type == animLayerType)
+                    break;
+                descLayerIndex += 1;
+            }
+
+            //Dir Path
+            var dirPath = AvatarForge.GetSaveDirectory();
+            dirPath = $"{dirPath}/Generated";
+            System.IO.Directory.CreateDirectory(dirPath);
+
+            //Create
+            var path = $"{dirPath}/{name}.controller";
+
+            //Copy animation controller
+            if(AvatarSetup.mergeAnimators)
+            {
+                var layer = AvatarDescriptor.baseAnimationLayers[descLayerIndex];
+                if(!layer.isDefault && layer.animatorController != null)
+                {
+                    descLayer.animatorController = Object.Instantiate(layer.animatorController);
+                    descLayer.animatorController.name = name;
+                    AssetDatabase.CreateAsset(descLayer.animatorController, path);
+                }
+            }
+
+            //Create controller if needed
+            if(descLayer.animatorController == null)
+            {
+                var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(path);
+                controller.AddLayer("Base Layer");
+                descLayer.animatorController = controller;
+            }
+
+            //Save
+            AvatarDescriptor.baseAnimationLayers[descLayerIndex] = descLayer;
+            EditorUtility.SetDirty(AvatarDescriptor);
+
+            //Add defaults
+            AddParameter((AnimatorController)descLayer.animatorController, "True", AnimatorControllerParameterType.Bool, 1);
+
+            //Return
+            return (AnimatorController)descLayer.animatorController;
+        }
+
         //Menu
+        static Regex regexAlphaNumericOnly = new Regex("[^a-zA-Z0-9 -]");
         static void InitExpressionMenu()
         {
-            //Create root menu if needed
-            if(AvatarDescriptor.expressionsMenu == null)
+            //Create root menu
+            VRCExpressionsMenu menu = null;
+            if(AvatarDescriptor.expressionsMenu != null && AvatarSetup.mergeAnimators)
             {
-                AvatarDescriptor.expressionsMenu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
-                AvatarDescriptor.expressionsMenu.name = "ExpressionsMenu_Root";
-                SaveAsset(AvatarBuilder.AvatarDescriptor.expressionsMenu, AvatarForge.GetSaveDirectory(), "Generated");
+                menu = CopyMenu(AvatarDescriptor.expressionsMenu, "Menu_Root");
+                VRCExpressionsMenu CopyMenu(VRCExpressionsMenu item, string name)
+                {
+                    var result = Object.Instantiate(item);
+                    result.name = name;
+
+                    foreach(var control in result.controls)
+                    {
+                        if(control.type != VRCExpressionsMenu.Control.ControlType.SubMenu || control.subMenu == null)
+                            continue;
+
+                        control.subMenu = CopyMenu(control.subMenu, $"Menu_{control.subMenu.name}");
+                    }
+
+                    SaveAsset(result, AvatarForge.GetSaveDirectory(), "Generated");
+                    return result;
+                }
             }
+            if(menu == null)
+            {
+                menu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
+                menu.name = "Menu_Root";
+                SaveAsset(menu, AvatarForge.GetSaveDirectory(), "Generated");
+            }
+
+            //Save
+            AvatarDescriptor.expressionsMenu = menu;
         }
 
         //Parameters
@@ -292,16 +306,15 @@ namespace Tropical.AvatarForge
         static void InitVRCExpressionParameters()
         {
             //Check if parameter object exists
-            var parametersObject = AvatarDescriptor.expressionParameters;
-            if(AvatarDescriptor.expressionParameters == null || !AvatarDescriptor.customExpressions)
-            {
+            VRCExpressionParameters parametersObject = null;
+            if(AvatarDescriptor.expressionParameters != null && AvatarDescriptor.customExpressions && AvatarSetup.mergeAnimators)
+                parametersObject = Object.Instantiate(AvatarDescriptor.expressionParameters);
+            else
                 parametersObject = ScriptableObject.CreateInstance<VRCExpressionParameters>();
-                parametersObject.name = "VRCExpressionParameters";
-                SaveAsset(parametersObject, AvatarForge.GetSaveDirectory(), "Generated");
-
-                AvatarDescriptor.customExpressions = true;
-                AvatarDescriptor.expressionParameters = parametersObject;
-            }
+            AvatarDescriptor.customExpressions = true;
+            AvatarDescriptor.expressionParameters = parametersObject;
+            parametersObject.name = "VRCExpressionParameters";
+            SaveAsset(parametersObject, AvatarForge.GetSaveDirectory(), "Generated");
 
             //Clear parameters
             BuildParameters.Clear();
@@ -423,7 +436,7 @@ namespace Tropical.AvatarForge
 
             //Waiting state
             var waitingState = layer.stateMachine.AddState("Waiting", new Vector3(0, 0, 0));
-            waitingState.writeDefaultValues = !turnOffState && useWriteDefaults;
+            waitingState.writeDefaultValues = useWriteDefaults;
 
             //Actions
             int itemIter = 0;
@@ -597,7 +610,7 @@ namespace Tropical.AvatarForge
 
             //Waiting
             AnimatorState waitingState = layer.stateMachine.AddState("Waiting", new Vector3(0, 0, 0));
-            waitingState.writeDefaultValues = !turnOffState && useWriteDefaults;
+            waitingState.writeDefaultValues = useWriteDefaults;
 
             //Each action
             int maxStatePosition = 1;
@@ -1179,7 +1192,9 @@ namespace Tropical.AvatarForge
                 var boneName = bones[i].name;
                 var sourceBone = FindRecursive(armature, boneName);
                 if(sourceBone != null)
+                {
                     bones[i] = sourceBone;
+                }
                 else
                     Debug.LogError($"Unable to find matching bone '{boneName}'");
             }

@@ -42,6 +42,12 @@ namespace Tropical.AvatarForge
             //Update bounds
             foreach(var renderer in renderers)
             {
+                if(renderer.rootBone == null)
+                {
+                    Debug.LogError($"ExpandBoundingBoxes, SkinnedMeshRenderer for '{renderer.gameObject.name}' has no root bone");
+                    continue;
+                }
+
                 var center = renderer.rootBone.InverseTransformPoint(maxBounds.center);
 
                 var extents = maxBounds.extents;

@@ -196,7 +196,7 @@ namespace Tropical.AvatarForge
         void DrawBuildOptions()
         {
             //Options
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("mergeOriginalAnimators"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("mergeAnimators"));
         }
 
         //Runtime

@@ -1,6 +1,6 @@
 # VRCAvatarForge
-Non-Destructive workflow for creating VRChat avatars.
+Tool to simplify the creation of VRChat avatars in Unity with a non-destructive workflow.
 
 Currently in beta.  Class names and serialization may break in coming versions.
 
-vcc://vpm/addRepo?url=https://github.com/BirdiePeep/VRCAvatarForge/raw/main/vcc-packages.json
+Learn More At [Avatar Forge](http://www.avatar-forge.com)

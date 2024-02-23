@@ -12,7 +12,7 @@ namespace Tropical.AvatarForge
                 EditorApplication.update += Startup;
         }
 
-        [MenuItem("Avatar Forge/Splash Screen")]
+        [MenuItem("Avatar Forge/Splash Screen", priority = 0)]
         static void Startup()
         {
             EditorApplication.update -= Startup;
@@ -50,6 +50,12 @@ namespace Tropical.AvatarForge
                 //Only show one for now
                 break;
             }
+        }
+
+        [MenuItem("Avatar Forge/Avatar Forge Website")]
+        static void VisitWebsite()
+        {
+            Application.OpenURL("www.avatar-forge.com");
         }
     }
 

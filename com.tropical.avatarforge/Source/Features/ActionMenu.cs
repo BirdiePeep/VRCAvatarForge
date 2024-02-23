@@ -7,6 +7,9 @@ namespace Tropical.AvatarForge
     [Serializable]
     public class ActionMenu : Feature
     {
+        //[Tooltip("Menu path where your controls will be placed")]
+        //public string menuPath;
+
         //Editor
         public string selectedMenuPath;
 

@@ -75,10 +75,13 @@ namespace Tropical.AvatarForge
             //Back
             EditorGUI.BeginDisabledGroup(parentMenu == null);
             if(GUILayout.Button(Styles.contentBackButton, GUILayout.Height(32)))
-            {
                 SetSelectedMenu(parentMenu);
-            }
             EditorGUI.EndDisabledGroup();
+
+            //Menu Path
+            //EditorGUI.BeginDisabledGroup(parentMenu != null);
+            //EditorGUILayout.PropertyField(target.FindPropertyRelative("menuPath"));
+            //EditorGUI.EndDisabledGroup();
 
             //Main List
             menuList.list = selectedMenu.FindPropertyRelative("controls");

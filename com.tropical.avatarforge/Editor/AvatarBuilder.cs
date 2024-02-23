@@ -2,11 +2,9 @@
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Animations;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
-using static Tropical.AvatarForge.AnimationController;
 
 namespace Tropical.AvatarForge
 {
@@ -18,17 +16,34 @@ namespace Tropical.AvatarForge
         public static VRCAvatarDescriptor AvatarDescriptor = null;
         public static AvatarForge AvatarSetup = null;
         public static Animator Animator = null;
-        public static AnimatorController ActionController;
-        public static AnimatorController FxController;
+
+        static AnimatorController BaseController;
+        static AnimatorController AdditiveController;
+        static AnimatorController GestureController;
+        static AnimatorController ActionController;
+        static AnimatorController FxController;
         public static AnimatorController GetController(Globals.AnimationLayer layer)
         {
             switch(layer)
             {
+                case Globals.AnimationLayer.Base:
+                    return GetController(ref BaseController);
+                case Globals.AnimationLayer.Additive:
+                    return GetController(ref AdditiveController);
+                case Globals.AnimationLayer.Gesture:
+                    return GetController(ref GestureController);
                 case Globals.AnimationLayer.Action:
-                    return ActionController;
+                    return GetController(ref ActionController);
                 case Globals.AnimationLayer.FX:
-                    return FxController;
+                    return GetController(ref FxController);
             }
+            AnimatorController GetController(ref AnimatorController controller)
+            {
+                if(controller == null)
+                    controller = CreateController((VRCAvatarDescriptor.AnimLayerType)layer, $"AnimationController_{layer.ToString()}");
+                return controller;
+            }
+
             return null;
         }
 
@@ -132,8 +147,12 @@ namespace Tropical.AvatarForge
         {
             //BaseAction Controller
             AvatarDescriptor.customizeAnimationLayers = true;
-            ActionController = CreateController(VRCAvatarDescriptor.AnimLayerType.Action, "AnimationController_Action");
-            FxController = CreateController(VRCAvatarDescriptor.AnimLayerType.FX, "AnimationController_FX");
+            ActionController = null;
+            BaseController = null;
+            AdditiveController = null;
+            GestureController = null;
+            ActionController = null;
+            FxController = null;
             Animator.runtimeAnimatorController = null;
 
             //Delete all generated animations
@@ -264,40 +283,139 @@ namespace Tropical.AvatarForge
         }
 
         //Menu
-        static Regex regexAlphaNumericOnly = new Regex("[^a-zA-Z0-9 -]");
         static void InitExpressionMenu()
         {
+            var oldMenu = AvatarDescriptor.customExpressions ? AvatarDescriptor.expressionsMenu : null;
+
             //Create root menu
-            VRCExpressionsMenu menu = null;
-            if(AvatarDescriptor.expressionsMenu != null && AvatarSetup.mergeAnimators)
-            {
-                menu = CopyMenu(AvatarDescriptor.expressionsMenu, "Menu_Root");
-                VRCExpressionsMenu CopyMenu(VRCExpressionsMenu item, string name)
-                {
-                    var result = Object.Instantiate(item);
-                    result.name = name;
+            var menu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
+            menu.name = "Menu_Root";
+            AvatarDescriptor.expressionsMenu = menu;
 
-                    foreach(var control in result.controls)
-                    {
-                        if(control.type != VRCExpressionsMenu.Control.ControlType.SubMenu || control.subMenu == null)
-                            continue;
-
-                        control.subMenu = CopyMenu(control.subMenu, $"Menu_{control.subMenu.name}");
-                    }
-
-                    SaveAsset(result, AvatarForge.GetSaveDirectory(), "Generated");
-                    return result;
-                }
-            }
-            if(menu == null)
-            {
-                menu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
-                menu.name = "Menu_Root";
-                SaveAsset(menu, AvatarForge.GetSaveDirectory(), "Generated");
-            }
+            //Merge in existing
+            if(oldMenu != null && AvatarSetup.mergeAnimators)
+                MergeMenu(oldMenu);
 
             //Save
-            AvatarDescriptor.expressionsMenu = menu;
+            SaveAsset(menu, AvatarForge.GetSaveDirectory(), "Generated");
+        }
+
+        public static void MergeMenu(VRCExpressionsMenu menu)
+        {
+            if(menu == null)
+                return;
+
+            foreach(var source in menu.controls)
+            {
+                //Copy
+                var newControl = Clone(source);
+                newControl.subMenu = CopyMenu(source.subMenu);
+
+                //Add
+                AvatarDescriptor.expressionsMenu.controls.Add(newControl);
+            }
+
+            VRCExpressionsMenu CopyMenu(VRCExpressionsMenu item)
+            {
+                if(item == null)
+                    return null;
+
+                //Copy
+                var result = Object.Instantiate(item);
+                result.name = $"Menu_{item.name}";
+
+                foreach(var control in result.controls)
+                {
+                    if(control.type != VRCExpressionsMenu.Control.ControlType.SubMenu)
+                        continue;
+                    control.subMenu = CopyMenu(control.subMenu);
+                }
+
+                SaveAsset(result, AvatarForge.GetSaveDirectory(), "Generated");
+                return result;
+            }
+        }
+        public static void MergeParameters(VRCExpressionParameters source)
+        {
+            if(source == null)
+                return;
+
+            //Clone
+            var newParams = new VRCExpressionParameters.Parameter[source.parameters.Length];
+            for(int i = 0; i < source.parameters.Length; i++)
+                newParams[i] = Clone(source.parameters[i]);
+
+            //Append
+            if(AvatarDescriptor.expressionParameters.parameters == null)
+                AvatarDescriptor.expressionParameters.parameters = newParams;
+            else
+                ArrayUtility.AddRange(ref AvatarDescriptor.expressionParameters.parameters, newParams);
+        }
+        public static void MergeController(RuntimeAnimatorController source, Globals.AnimationLayer animLayer)
+        {
+            if(source == null)
+                return;
+
+            var controller = GetController(animLayer);
+            var toMerge = (AnimatorController)source;
+
+            //Combine variables
+            foreach(var variable in toMerge.parameters)
+            {
+                float value = 0;
+                switch(variable.type)
+                {
+                    case AnimatorControllerParameterType.Bool:
+                        value = variable.defaultBool ? 1f : 0f; break;
+                    case AnimatorControllerParameterType.Float:
+                        value = variable.defaultFloat; break;
+                    case AnimatorControllerParameterType.Int:
+                        value = variable.defaultInt; break;
+                }
+                AddParameter(controller, variable.name, variable.type, value);
+            }
+
+            //Add layers
+            bool isFirstLayer = true;
+            foreach(var layer in toMerge.layers)
+            {
+                var newLayer = new AnimatorControllerLayer();
+                newLayer.name = layer.name;
+                newLayer.stateMachine = layer.stateMachine;
+                newLayer.avatarMask = layer.avatarMask;
+                newLayer.blendingMode = layer.blendingMode;
+                newLayer.syncedLayerIndex = layer.syncedLayerIndex;
+                newLayer.iKPass = layer.iKPass;
+                newLayer.defaultWeight = isFirstLayer ? 1f : layer.defaultWeight;
+                newLayer.syncedLayerAffectsTiming = layer.syncedLayerAffectsTiming;
+                controller.AddLayer(newLayer);
+
+                isFirstLayer = false;
+            }
+        }
+        static VRCExpressionsMenu.Control Clone(VRCExpressionsMenu.Control source)
+        {
+            var item = new VRCExpressionsMenu.Control();
+            item.name = source.name;
+            item.type = source.type;
+            item.icon = source.icon;
+            item.parameter = source.parameter;
+            item.value = source.value;
+            item.style = source.style;
+            item.subMenu = source.subMenu;
+            item.subParameters = source.subParameters;
+            item.labels = source.labels;
+            return item;
+        }
+        static VRCExpressionParameters.Parameter Clone(VRCExpressionParameters.Parameter source)
+        {
+            var item = new VRCExpressionParameters.Parameter();
+            item.name = source.name;
+            item.valueType = source.valueType;
+            item.defaultValue = source.defaultValue;
+            item.saved = source.saved;
+            item.networkSynced = source.networkSynced;
+            return item;
         }
 
         //Parameters
@@ -305,15 +423,18 @@ namespace Tropical.AvatarForge
         public static List<VRCExpressionParameters.Parameter> BuildParameters = new List<VRCExpressionParameters.Parameter>();
         static void InitVRCExpressionParameters()
         {
+            var oldParams = AvatarDescriptor.customExpressions ? AvatarDescriptor.expressionParameters : null;
+
             //Check if parameter object exists
-            VRCExpressionParameters parametersObject = null;
-            if(AvatarDescriptor.expressionParameters != null && AvatarDescriptor.customExpressions && AvatarSetup.mergeAnimators)
-                parametersObject = Object.Instantiate(AvatarDescriptor.expressionParameters);
-            else
-                parametersObject = ScriptableObject.CreateInstance<VRCExpressionParameters>();
+            var parametersObject = ScriptableObject.CreateInstance<VRCExpressionParameters>();
             AvatarDescriptor.customExpressions = true;
             AvatarDescriptor.expressionParameters = parametersObject;
             parametersObject.name = "VRCExpressionParameters";
+
+            //Merge existing
+            if(oldParams != null && AvatarDescriptor.customExpressions && AvatarSetup.mergeAnimators)
+                MergeParameters(oldParams);
+
             SaveAsset(parametersObject, AvatarForge.GetSaveDirectory(), "Generated");
 
             //Clear parameters
@@ -601,6 +722,10 @@ namespace Tropical.AvatarForge
         {
             //Prepare layer
             var layer = GetControllerLayer(controller, layerName);
+            if(layer == null || layer.stateMachine == null)
+            {
+                Debug.LogError("wut");
+            }
             layer.stateMachine.entryTransitions = null;
             layer.stateMachine.anyStateTransitions = null;
             layer.stateMachine.states = null;

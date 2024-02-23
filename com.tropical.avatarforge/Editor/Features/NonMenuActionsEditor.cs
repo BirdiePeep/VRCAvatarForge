@@ -31,7 +31,11 @@ namespace Tropical.AvatarForge
             behaviourList.OnAdd = (element) =>
             {
                 element.FindPropertyRelative("name").stringValue = "New Action";
-                element.isExpanded = true;
+                element.FindPropertyRelative("fadeIn").floatValue = 0f;
+                element.FindPropertyRelative("fadeOut").floatValue = 0f;
+                element.FindPropertyRelative("hold").floatValue = 0f;
+                element.FindPropertyRelative("options").ClearArray();
+                element.serializedObject.ApplyModifiedProperties();
             };
             behaviourList.OnInspectorGUI();
         }

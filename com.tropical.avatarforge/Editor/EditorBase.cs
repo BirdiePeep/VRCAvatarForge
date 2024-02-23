@@ -140,12 +140,12 @@ namespace Tropical.AvatarForge
         {
             EditorGUILayout.BeginHorizontal();
             {
+                //Text field
+                EditorGUILayout.PrefixLabel(label + (!required ? " (Optional)" : ""));
+                parameter.stringValue = GUILayout.TextField(parameter.stringValue);
+
                 if (avatarDescriptor != null)
                 {
-                    //Text field
-                    EditorGUILayout.PrefixLabel(label + (!required ? " (Optional)" : ""));
-                    parameter.stringValue = GUILayout.TextField(parameter.stringValue);
-
                     //Dropdown
                     int currentIndex;
                     if (string.IsNullOrEmpty(parameter.stringValue))
@@ -182,11 +182,9 @@ namespace Tropical.AvatarForge
                 else
                 {
                     EditorGUI.BeginDisabledGroup(true);
-                    EditorGUILayout.Popup(0, new string[0]);
+                    EditorGUILayout.Popup(0, new string[0], GUILayout.MaxWidth(SecondDropdownSize));
                     EditorGUI.EndDisabledGroup();
                 }
-
-                
             }
             EditorGUILayout.EndHorizontal();
 

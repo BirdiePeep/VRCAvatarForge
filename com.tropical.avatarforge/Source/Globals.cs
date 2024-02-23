@@ -74,8 +74,11 @@ namespace Tropical.AvatarForge
         }
         public enum AnimationLayer
         {
-            FX = VRCAvatarDescriptor.AnimLayerType.FX,
+            Base = VRCAvatarDescriptor.AnimLayerType.Base,
+            Additive = VRCAvatarDescriptor.AnimLayerType.Additive,
+            Gesture = VRCAvatarDescriptor.AnimLayerType.Gesture,
             Action = VRCAvatarDescriptor.AnimLayerType.Action,
+            FX = VRCAvatarDescriptor.AnimLayerType.FX,
         }
         public enum OnOffEnum
         {

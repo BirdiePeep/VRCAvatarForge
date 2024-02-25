@@ -79,9 +79,9 @@ namespace Tropical.AvatarForge
             EditorGUI.EndDisabledGroup();
 
             //Menu Path
-            //EditorGUI.BeginDisabledGroup(parentMenu != null);
-            //EditorGUILayout.PropertyField(target.FindPropertyRelative("menuPath"));
-            //EditorGUI.EndDisabledGroup();
+            EditorGUI.BeginDisabledGroup(parentMenu != null);
+            EditorGUILayout.PropertyField(target.FindPropertyRelative("menuPath"));
+            EditorGUI.EndDisabledGroup();
 
             //Main List
             menuList.list = selectedMenu.FindPropertyRelative("controls");
@@ -452,6 +452,25 @@ namespace Tropical.AvatarForge
         {
             if(source == null)
                 return;
+
+            //Find the root menu path
+            if(!string.IsNullOrEmpty(source.menuPath))
+            {
+                var path = source.menuPath.Split('/');
+                foreach(var item in path)
+                {
+                    var control = dest.FindControl(source.menuPath) as SubMenu;
+                    if(control == null)
+                    {
+                        control = new SubMenu();
+                        control.name = item;
+                        dest.controls.Add(control);
+                    }
+                    if(control.subMenu == null)
+                        control.subMenu = new ActionMenu();
+                    dest = control.subMenu;
+                }
+            }
 
             //Controls
             foreach(var control in source.controls)

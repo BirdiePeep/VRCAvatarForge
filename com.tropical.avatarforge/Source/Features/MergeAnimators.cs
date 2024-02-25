@@ -11,6 +11,10 @@ namespace Tropical.AvatarForge
         public RuntimeAnimatorController actionController;
         public RuntimeAnimatorController fxController;
 
+        public RuntimeAnimatorController sittingController;
+        public RuntimeAnimatorController tposeController;
+        public RuntimeAnimatorController ikposeController;
+
         public VRCExpressionsMenu menu;
         public VRCExpressionParameters parameters;
     }

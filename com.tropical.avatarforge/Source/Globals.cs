@@ -79,6 +79,9 @@ namespace Tropical.AvatarForge
             Gesture = VRCAvatarDescriptor.AnimLayerType.Gesture,
             Action = VRCAvatarDescriptor.AnimLayerType.Action,
             FX = VRCAvatarDescriptor.AnimLayerType.FX,
+            Sitting = VRCAvatarDescriptor.AnimLayerType.Sitting,
+            TPose = VRCAvatarDescriptor.AnimLayerType.TPose,
+            IKPose = VRCAvatarDescriptor.AnimLayerType.IKPose,
         }
         public enum OnOffEnum
         {

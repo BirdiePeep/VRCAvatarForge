@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using static VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
 
 namespace Tropical.AvatarForge
 {
@@ -22,6 +22,9 @@ namespace Tropical.AvatarForge
         static AnimatorController GestureController;
         static AnimatorController ActionController;
         static AnimatorController FxController;
+        static AnimatorController SittingController;
+        static AnimatorController TPoseController;
+        static AnimatorController IKPoseController;
         public static AnimatorController GetController(Globals.AnimationLayer layer)
         {
             switch(layer)
@@ -36,6 +39,12 @@ namespace Tropical.AvatarForge
                     return GetController(ref ActionController);
                 case Globals.AnimationLayer.FX:
                     return GetController(ref FxController);
+                case Globals.AnimationLayer.Sitting:
+                    return GetController(ref SittingController);
+                case Globals.AnimationLayer.TPose:
+                    return GetController(ref TPoseController);
+                case Globals.AnimationLayer.IKPose:
+                    return GetController(ref IKPoseController);
             }
             AnimatorController GetController(ref AnimatorController controller)
             {
@@ -91,13 +100,19 @@ namespace Tropical.AvatarForge
                 //Add features
                 BuildFeatures.AddRange(setup.features);
             }
+
+            //Find all attachable gameobjects
+            var attachments = new HashSet<GameObject>();
             foreach(var setup in setups)
             {
+                if(setup.gameObject == null || setup.gameObject == desc.gameObject)
+                    continue;
+                attachments.Add(setup.gameObject);
+            }
+            foreach(var obj in attachments)
+            {
                 //Attach prefab, this will delete setups
-                if(setup.gameObject != desc.gameObject)
-                {
-                    AttachPrefab(setup.gameObject, AvatarDescriptor);
-                }
+                AttachPrefab(obj, AvatarDescriptor);
             }
 
             //Prebuilding can modify this container, so we need to use a for loop
@@ -234,15 +249,6 @@ namespace Tropical.AvatarForge
             descLayer.isDefault = false;
             descLayer.type = animLayerType;
 
-            //Find layer index
-            int descLayerIndex = 0;
-            foreach(var layer in AvatarDescriptor.baseAnimationLayers)
-            {
-                if(layer.type == animLayerType)
-                    break;
-                descLayerIndex += 1;
-            }
-
             //Dir Path
             var dirPath = AvatarForge.GetSaveDirectory();
             dirPath = $"{dirPath}/Generated";
@@ -254,7 +260,7 @@ namespace Tropical.AvatarForge
             //Copy animation controller
             if(AvatarSetup.mergeAnimators)
             {
-                var layer = AvatarDescriptor.baseAnimationLayers[descLayerIndex];
+                var layer = GetDescriptorLayer(animLayerType);
                 if(!layer.isDefault && layer.animatorController != null)
                 {
                     descLayer.animatorController = Object.Instantiate(layer.animatorController);
@@ -272,7 +278,7 @@ namespace Tropical.AvatarForge
             }
 
             //Save
-            AvatarDescriptor.baseAnimationLayers[descLayerIndex] = descLayer;
+            SetDescriptorLayer(descLayer);
             EditorUtility.SetDirty(AvatarDescriptor);
 
             //Add defaults
@@ -280,6 +286,74 @@ namespace Tropical.AvatarForge
 
             //Return
             return (AnimatorController)descLayer.animatorController;
+        }
+        static VRCAvatarDescriptor.CustomAnimLayer GetDescriptorLayer(VRCAvatarDescriptor.AnimLayerType animLayerType)
+        {
+            switch(animLayerType)
+            {
+                case VRCAvatarDescriptor.AnimLayerType.Action:
+                case VRCAvatarDescriptor.AnimLayerType.Additive:
+                case VRCAvatarDescriptor.AnimLayerType.Base:
+                case VRCAvatarDescriptor.AnimLayerType.Gesture:
+                case VRCAvatarDescriptor.AnimLayerType.FX:
+                {
+                    foreach(var item in AvatarDescriptor.baseAnimationLayers)
+                    {
+                        if(item.type == animLayerType)
+                            return item;
+                    }
+                    break;
+                }
+                case VRCAvatarDescriptor.AnimLayerType.Sitting:
+                case VRCAvatarDescriptor.AnimLayerType.TPose:
+                case VRCAvatarDescriptor.AnimLayerType.IKPose:
+                {
+                    foreach(var item in AvatarDescriptor.specialAnimationLayers)
+                    {
+                        if(item.type == animLayerType)
+                            return item;
+                    }
+                    break;
+                }
+            }
+
+            return default;
+        }
+        static void SetDescriptorLayer(VRCAvatarDescriptor.CustomAnimLayer desc)
+        {
+            switch(desc.type)
+            {
+                case VRCAvatarDescriptor.AnimLayerType.Action:
+                case VRCAvatarDescriptor.AnimLayerType.Additive:
+                case VRCAvatarDescriptor.AnimLayerType.Base:
+                case VRCAvatarDescriptor.AnimLayerType.Gesture:
+                case VRCAvatarDescriptor.AnimLayerType.FX:
+                {
+                    for(int i = 0; i < AvatarDescriptor.baseAnimationLayers.Length; i++)
+                    {
+                        if(AvatarDescriptor.baseAnimationLayers[i].type == desc.type)
+                        {
+                            AvatarDescriptor.baseAnimationLayers[i] = desc;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case VRCAvatarDescriptor.AnimLayerType.Sitting:
+                case VRCAvatarDescriptor.AnimLayerType.TPose:
+                case VRCAvatarDescriptor.AnimLayerType.IKPose:
+                {
+                    for(int i = 0; i < AvatarDescriptor.specialAnimationLayers.Length; i++)
+                    {
+                        if(AvatarDescriptor.specialAnimationLayers[i].type == desc.type)
+                        {
+                            AvatarDescriptor.specialAnimationLayers[i] = desc;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
         }
 
         //Menu

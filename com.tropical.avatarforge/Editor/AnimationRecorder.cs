@@ -22,7 +22,9 @@ namespace Tropical.AvatarForge
             EditorGUILayout.BeginHorizontal();
             {
                 //Property
+                EditorGUI.BeginDisabledGroup(AnimationRecorder.IsRecording);
                 EditorGUILayout.PropertyField(property, label != null ? new GUIContent(label) : GUIContent.none);
+                EditorGUI.EndDisabledGroup();
 
                 //Recording
                 if(!AnimationRecorder.IsRecording)

@@ -273,7 +273,7 @@ namespace Tropical.AvatarForge
             if(descLayer.animatorController == null)
             {
                 var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(path);
-                controller.AddLayer("Base Layer");
+                controller.RemoveLayer(0); //Remove base layer
                 descLayer.animatorController = controller;
             }
 
@@ -414,16 +414,9 @@ namespace Tropical.AvatarForge
             if(source == null)
                 return;
 
-            //Clone
-            var newParams = new VRCExpressionParameters.Parameter[source.parameters.Length];
+            //Copy
             for(int i = 0; i < source.parameters.Length; i++)
-                newParams[i] = Clone(source.parameters[i]);
-
-            //Append
-            if(AvatarDescriptor.expressionParameters.parameters == null)
-                AvatarDescriptor.expressionParameters.parameters = newParams;
-            else
-                ArrayUtility.AddRange(ref AvatarDescriptor.expressionParameters.parameters, newParams);
+                BuildParameters.Add(Clone(source.parameters[i]));
         }
         public static void MergeController(RuntimeAnimatorController source, Globals.AnimationLayer animLayer)
         {
@@ -450,7 +443,6 @@ namespace Tropical.AvatarForge
             }
 
             //Add layers
-            bool isFirstLayer = true;
             foreach(var layer in toMerge.layers)
             {
                 var newLayer = new AnimatorControllerLayer();
@@ -460,11 +452,9 @@ namespace Tropical.AvatarForge
                 newLayer.blendingMode = layer.blendingMode;
                 newLayer.syncedLayerIndex = layer.syncedLayerIndex;
                 newLayer.iKPass = layer.iKPass;
-                newLayer.defaultWeight = isFirstLayer ? 1f : layer.defaultWeight;
+                newLayer.defaultWeight = layer.defaultWeight;
                 newLayer.syncedLayerAffectsTiming = layer.syncedLayerAffectsTiming;
                 controller.AddLayer(newLayer);
-
-                isFirstLayer = false;
             }
         }
         static VRCExpressionsMenu.Control Clone(VRCExpressionsMenu.Control source)

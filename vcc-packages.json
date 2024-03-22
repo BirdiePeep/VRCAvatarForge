@@ -37,6 +37,14 @@
 					"description": "Streamlined workflow for VRChat avatars.",
 					"hideInEditor": false,
 					"url": "https://github.com/BirdiePeep/VRCAvatarForge/raw/main/Releases/com.tropical.avatarforge.0.1.3.zip"
+				},
+				"0.1.4": {
+					"name": "com.tropical.avatarforge",
+					"displayName": "VRCAvatarForge",
+					"version": "0.1.4",
+					"description": "Streamlined workflow for VRChat avatars.",
+					"hideInEditor": false,
+					"url": "https://github.com/BirdiePeep/VRCAvatarForge/raw/main/Releases/com.tropical.avatarforge.0.1.4.zip"
 				}
 			}
 		}

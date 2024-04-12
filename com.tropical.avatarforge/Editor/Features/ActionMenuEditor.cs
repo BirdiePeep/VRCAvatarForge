@@ -188,18 +188,16 @@ namespace Tropical.AvatarForge
             actionEditor.OnInspectorGUI();
         }
         void DrawButton(SerializedProperty action)
-        {
-            //Default
-            actionEditor.setup = setup;
-            actionEditor.SetTarget(action);
-            actionEditor.OnInspectorGUI();
-
-            if(BeginCategory("Options", action.FindPropertyRelative("foldoutOptions")))
-            {
-                DrawParameterDropDown(action.FindPropertyRelative("parameter"), "Parameter", false);
-            }
-            EndCategory();
-        }
+		{
+			//Default
+			actionEditor.setup = setup;
+			actionEditor.SetTarget(action);
+			actionEditor.OnOptions = () =>
+			{
+				DrawParameterDropDown(action.FindPropertyRelative("parameter"), "Parameter", false);
+			};
+			actionEditor.OnInspectorGUI();
+		}
         void DrawSlider(SerializedProperty action)
         {
             var name = action.FindPropertyRelative("name");

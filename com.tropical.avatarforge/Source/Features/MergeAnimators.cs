@@ -17,5 +17,7 @@ namespace Tropical.AvatarForge
 
         public VRCExpressionsMenu menu;
         public VRCExpressionParameters parameters;
+
+        public override int BuildPriority => -100;
     }
 }

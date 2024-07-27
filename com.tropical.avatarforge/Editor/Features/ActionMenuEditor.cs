@@ -637,8 +637,6 @@ namespace Tropical.AvatarForge
             {
                 //Record old controls
                 var oldControls = expressionsMenu.controls.ToArray();
-                if(!AvatarBuilder.AvatarSetup.mergeAnimators)
-                    expressionsMenu.controls.Clear();
 
                 //Check size
                 if(expressionsMenu.controls.Count + ourMenu.controls.Count > VRCExpressionsMenu.MAX_CONTROLS)

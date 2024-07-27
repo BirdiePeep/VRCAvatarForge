@@ -76,24 +76,18 @@ namespace Tropical.AvatarForge
                 DrawFeatures();
 
                 //Build Options & Data
-                if(avatar != null)
+                /*if(avatar != null)
                 {
                     EditorBase.Divider();
 
-                    if(BeginCategory("Build Options", ref setup.foldoutBuildOptions))
-                    {
-                        DrawBuildOptions();
-                    }
-                    EndCategory();
-
                     //Build
-                    /*EditorGUI.BeginDisabledGroup(EasyAvatarSetup.ReturnSavePath() == null || script.avatar == null);
+                    EditorGUI.BeginDisabledGroup(EasyAvatarSetup.ReturnSavePath() == null || script.avatar == null);
                     if(GUILayout.Button("Build Avatar Copy", GUILayout.Height(32)))
                     {
                         AvatarBuilder.BuildAvatarCopy(script.avatar, script, " (Generated)");
                     }
-                    EditorGUI.EndDisabledGroup();*/
-                }
+                    EditorGUI.EndDisabledGroup();
+                }*/
             }
             if(EditorGUI.EndChangeCheck())
             {
@@ -192,11 +186,6 @@ namespace Tropical.AvatarForge
                 return null;
             };
             featureList.OnInspectorGUI();
-        }
-        void DrawBuildOptions()
-        {
-            //Options
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("mergeAnimators"));
         }
 
         //Runtime

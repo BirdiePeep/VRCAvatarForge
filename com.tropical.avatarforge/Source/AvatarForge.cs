@@ -16,10 +16,6 @@ namespace Tropical.AvatarForge
         //Features
         [SerializeReference] public List<Feature> features = new List<Feature>();
 
-        //Build Options
-        [Tooltip("Merges in the playable layers, expression parameters and expression parameters objects from the avatar descriptor.")]
-        public bool mergeAnimators = true;
-
         [System.Serializable]
         public struct ParamDefault
         {

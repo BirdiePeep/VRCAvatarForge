@@ -79,6 +79,16 @@ namespace Tropical.AvatarForge
             //Remove setup script
             GameObject.DestroyImmediate(setup);
         }
+        class BuildFeaturesComparer : IComparer<Feature>
+        {
+            public int Compare(Feature A, Feature B)
+            {
+                int result = A.BuildPriority.CompareTo(B.BuildPriority);
+                if(result != 0)
+                    return result;
+                return A.beginningOrder.CompareTo(B.beginningOrder);
+            }
+        }
         public static bool BuildAvatarDestructive(VRCAvatarDescriptor desc, AvatarForge actionsDesc)
         {
             Debug.Log("Building Avatar");
@@ -98,8 +108,13 @@ namespace Tropical.AvatarForge
                 setup.transform.SetParent(null, false);
 
                 //Add features
-                BuildFeatures.AddRange(setup.features);
+                foreach(var feature in setup.features)
+                {
+                    feature.beginningOrder = BuildFeatures.Count;
+                    BuildFeatures.Add(feature);
+                }
             }
+            BuildFeatures.Sort(new BuildFeaturesComparer());
 
             //Find all attachable gameobjects
             var attachments = new HashSet<GameObject>();
@@ -191,7 +206,7 @@ namespace Tropical.AvatarForge
             {
                 //Expression Parameters
                 var buildParams = BuildParameters.ToArray();
-                if(AvatarDescriptor.expressionParameters?.parameters != null && AvatarDescriptor.customExpressions && AvatarSetup.mergeAnimators)
+                if(AvatarDescriptor.expressionParameters?.parameters != null && AvatarDescriptor.customExpressions)
                     ArrayUtility.AddRange(ref buildParams, AvatarDescriptor.expressionParameters.parameters);
                 AvatarDescriptor.expressionParameters.parameters = buildParams;
 
@@ -258,15 +273,12 @@ namespace Tropical.AvatarForge
             var path = $"{dirPath}/{name}.controller";
 
             //Copy animation controller
-            if(AvatarSetup.mergeAnimators)
+            var layer = GetDescriptorLayer(animLayerType);
+            if(!layer.isDefault && layer.animatorController != null)
             {
-                var layer = GetDescriptorLayer(animLayerType);
-                if(!layer.isDefault && layer.animatorController != null)
-                {
-                    descLayer.animatorController = Object.Instantiate(layer.animatorController);
-                    descLayer.animatorController.name = name;
-                    AssetDatabase.CreateAsset(descLayer.animatorController, path);
-                }
+                descLayer.animatorController = Object.Instantiate(layer.animatorController);
+                descLayer.animatorController.name = name;
+                AssetDatabase.CreateAsset(descLayer.animatorController, path);
             }
 
             //Create controller if needed
@@ -367,7 +379,7 @@ namespace Tropical.AvatarForge
             AvatarDescriptor.expressionsMenu = menu;
 
             //Merge in existing
-            if(oldMenu != null && AvatarSetup.mergeAnimators)
+            if(oldMenu != null)
                 MergeMenu(oldMenu);
 
             //Save
@@ -496,7 +508,7 @@ namespace Tropical.AvatarForge
             parametersObject.name = "VRCExpressionParameters";
 
             //Merge existing
-            if(oldParams != null && AvatarDescriptor.customExpressions && AvatarSetup.mergeAnimators)
+            if(oldParams != null && AvatarDescriptor.customExpressions)
                 MergeParameters(oldParams);
 
             SaveAsset(parametersObject, AvatarForge.GetSaveDirectory(), "Generated");

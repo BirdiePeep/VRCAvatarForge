@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
-using Mono.Cecil;
 using System.Collections.Generic;
-using VRC.SDK3.Avatars.Components;
 
 namespace Tropical.AvatarForge
 {

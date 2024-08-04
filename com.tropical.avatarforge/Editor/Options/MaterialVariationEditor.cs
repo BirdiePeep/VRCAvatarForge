@@ -169,7 +169,7 @@ namespace Tropical.AvatarForge
                 BuildMaterial(true);
 
                 //Add Keyframes
-                var renderers = AvatarBuilder.AvatarSetup.GetComponentsInChildren<Renderer>(true);
+                var renderers = AvatarBuilder.AvatarRoot.GetComponentsInChildren<Renderer>(true);
                 foreach(var renderer in renderers)
                 {
                     var materials = renderer.sharedMaterials;

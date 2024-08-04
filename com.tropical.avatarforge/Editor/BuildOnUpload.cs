@@ -17,7 +17,7 @@ namespace Tropical.AvatarForge
         {
             var avatar = script.gameObject.GetComponent<VRCAvatarDescriptor>();
             if(avatar != null)
-                return AvatarBuilder.BuildAvatarDestructive(avatar, script);
+                return AvatarBuilder.BuildAvatarDestructive(avatar);
             return true;
         }
 
@@ -28,9 +28,7 @@ namespace Tropical.AvatarForge
             var avatar = GameObject.FindObjectOfType<VRCAvatarDescriptor>();
             if(avatar != null)
             {
-                var setup = avatar.GetComponent<AvatarForge>();
-                if(setup != null)
-                    AvatarBuilder.BuildAvatarDestructive(avatar, setup);
+                AvatarBuilder.BuildAvatarDestructive(avatar);
             }
         }
     }

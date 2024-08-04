@@ -23,7 +23,6 @@ namespace Tropical.AvatarForge
         public static List<Feature> BuildFeatures = new List<Feature>();
         public static VRCAvatarDescriptor AvatarDescriptor = null;
         public static Transform AvatarRoot = null;
-        public static AvatarForge AvatarSetup = null;
         public static Animator Animator = null;
 
         static AnimatorController BaseController;
@@ -68,7 +67,7 @@ namespace Tropical.AvatarForge
         public static Dictionary<string, AnimationClip> GeneratedClips = new Dictionary<string, AnimationClip>();
         public static Dictionary<string, List<ActionMenu.Control>> ParameterToMenuActions = new Dictionary<string, List<ActionMenu.Control>>();
 
-        public static void BuildAvatarCopy(VRCAvatarDescriptor desc, AvatarForge setup, string postFix)
+        public static void BuildAvatarCopy(VRCAvatarDescriptor desc, string postFix)
         {
             //Delete old preview object
             string name = desc.gameObject.name + postFix;
@@ -82,11 +81,7 @@ namespace Tropical.AvatarForge
 
             //Build
             desc = newObj.GetComponent<VRCAvatarDescriptor>();
-            setup = newObj.GetComponent<AvatarForge>();
-            BuildAvatarDestructive(desc, setup);
-
-            //Remove setup script
-            GameObject.DestroyImmediate(setup);
+            BuildAvatarDestructive(desc);
         }
         class BuildFeaturesComparer : IComparer<Feature>
         {
@@ -98,13 +93,12 @@ namespace Tropical.AvatarForge
                 return A.beginningOrder.CompareTo(B.beginningOrder);
             }
         }
-        public static bool BuildAvatarDestructive(VRCAvatarDescriptor desc, AvatarForge actionsDesc)
+        public static bool BuildAvatarDestructive(VRCAvatarDescriptor desc)
         {
             Debug.Log("Building Avatar");
 
             //Store
             AvatarDescriptor = desc;
-            AvatarSetup = actionsDesc;
             AvatarRoot = desc.gameObject.transform;
             Animator = desc.gameObject.GetComponent<Animator>();
             BuildFailed = false;

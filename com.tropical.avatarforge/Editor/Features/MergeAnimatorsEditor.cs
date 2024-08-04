@@ -43,5 +43,6 @@ namespace Tropical.AvatarForge
             AvatarBuilder.MergeParameters(feature.parameters);
         }
         public override void PostBuild() { }
+        public override int BuildOrder => (int)AvatarBuilder.BuildPriority.MergeAnimators;
     }
 }

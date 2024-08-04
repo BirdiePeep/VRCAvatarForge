@@ -12,8 +12,17 @@ namespace Tropical.AvatarForge
     {
         public static bool BuildFailed = false;
 
+        public enum BuildPriority : int
+        {
+            AttachObjects = -200,
+            MergeAnimators = -100,
+            Normal = 0,
+            Other = 100,
+        }
+
         public static List<Feature> BuildFeatures = new List<Feature>();
         public static VRCAvatarDescriptor AvatarDescriptor = null;
+        public static Transform AvatarRoot = null;
         public static AvatarForge AvatarSetup = null;
         public static Animator Animator = null;
 
@@ -83,7 +92,7 @@ namespace Tropical.AvatarForge
         {
             public int Compare(Feature A, Feature B)
             {
-                int result = A.BuildPriority.CompareTo(B.BuildPriority);
+                int result = A.buildOrder.CompareTo(B.buildOrder);
                 if(result != 0)
                     return result;
                 return A.beginningOrder.CompareTo(B.beginningOrder);
@@ -96,6 +105,7 @@ namespace Tropical.AvatarForge
             //Store
             AvatarDescriptor = desc;
             AvatarSetup = actionsDesc;
+            AvatarRoot = desc.gameObject.transform;
             Animator = desc.gameObject.GetComponent<Animator>();
             BuildFailed = false;
             BuildFeatures.Clear();
@@ -110,14 +120,21 @@ namespace Tropical.AvatarForge
                 //Add features
                 foreach(var feature in setup.features)
                 {
-                    feature.beginningOrder = BuildFeatures.Count;
-                    BuildFeatures.Add(feature);
+                    var editor = FeatureEditorBase.FindEditor(feature);
+                    if(editor != null)
+                    {
+                        //Fill out sorting information
+                        feature.gameObject = setup.gameObject;
+                        feature.beginningOrder = BuildFeatures.Count;
+                        feature.buildOrder = editor.BuildOrder;
+                        BuildFeatures.Add(feature);
+                    }
                 }
             }
-            BuildFeatures.Sort(new BuildFeaturesComparer());
+            BuildFeatures.Sort(new BuildFeaturesComparer()); //Sort!
 
             //Find all attachable gameobjects
-            var attachments = new HashSet<GameObject>();
+            /*var attachments = new HashSet<GameObject>();
             foreach(var setup in setups)
             {
                 if(setup.gameObject == null || setup.gameObject == desc.gameObject)
@@ -128,7 +145,7 @@ namespace Tropical.AvatarForge
             {
                 //Attach prefab, this will delete setups
                 AttachPrefab(obj, AvatarDescriptor);
-            }
+            }*/
 
             //Prebuilding can modify this container, so we need to use a for loop
             for(int i=0; i<BuildFeatures.Count; i++) 
@@ -1305,117 +1322,6 @@ namespace Tropical.AvatarForge
 
             AssetDatabase.CreateAsset(asset, path);
             return true;
-        }
-
-        //Attachment
-        static void AttachPrefab(GameObject instance, VRCAvatarDescriptor avatar)
-        {
-            //Attach each
-            List<GameObject> newObjects = new List<GameObject>();
-            var children = new GameObject[instance.transform.childCount];
-            for(int i = 0; i < instance.transform.childCount; i++)
-                children[i] = instance.transform.GetChild(i).gameObject;
-            foreach(var child in children)
-            {
-                AttachPrefab("", child, avatar, newObjects);
-            }
-
-            //Attach bones
-            foreach(var obj in newObjects)
-            {
-                var skinned = obj.GetComponentsInChildren<SkinnedMeshRenderer>(true);
-                foreach(var renderer in skinned)
-                    AttachBones(avatar.transform, renderer);
-            }
-
-            //Process
-            /*foreach(var obj in newObjects)
-            {
-                var processes = obj.GetComponentsInChildren<IOutfitProcess>(true);
-                foreach(var process in processes)
-                {
-                    process.AttachOutfit(this, obj);
-                    GameObject.DestroyImmediate((MonoBehaviour)process);
-                }
-            }*/
-
-            //Destroy Instance garbage
-            GameObject.DestroyImmediate(instance);
-        }
-        static void AttachPrefab(string path, GameObject instance, VRCAvatarDescriptor avatar, List<GameObject> newObjects)
-        {
-            //Path
-            var parentPath = path;
-            if(string.IsNullOrEmpty(path))
-                path = instance.name;
-            else
-                path += "/" + instance.name;
-
-            //Does this exist on the base prefab
-            var existing = avatar.transform.Find(path);
-            if(existing != null)
-            {
-                //Continue search
-                var children = new GameObject[instance.transform.childCount];
-                for(int i = 0; i < instance.transform.childCount; i++)
-                    children[i] = instance.transform.GetChild(i).gameObject;
-                foreach(var child in children)
-                {
-                    AttachPrefab(path, child, avatar, newObjects);
-                }
-            }
-            else
-            {
-                //Does this already exist on the current model
-                existing = avatar.transform.Find(path);
-                if(existing != null)
-                    return;
-
-                //Add
-                GameObject parent = string.IsNullOrEmpty(parentPath) ? avatar.gameObject : avatar.transform.Find(parentPath)?.gameObject;
-                if(parent != null)
-                {
-                    instance.transform.SetParent(parent.transform, false);
-                    newObjects.Add(instance);
-                }
-            }
-        }
-        static void AttachBones(Transform armature, SkinnedMeshRenderer dest)
-        {
-            //Root
-            if(dest.rootBone != null)
-                dest.rootBone = FindRecursive(armature, dest.rootBone.name);
-
-            //Find bones
-            var bones = (Transform[])dest.bones.Clone();
-            for(int i = 0; i < dest.bones.Length; i++)
-            {
-                var boneName = bones[i].name;
-                var sourceBone = FindRecursive(armature, boneName);
-                if(sourceBone != null)
-                {
-                    bones[i] = sourceBone;
-                }
-                else
-                    Debug.LogError($"Unable to find matching bone '{boneName}'");
-            }
-            dest.bones = bones;
-        }
-        static Transform FindRecursive(Transform self, string name)
-        {
-            //Find
-            var result = self.Find(name);
-            if(result != null)
-                return result;
-
-            //Recusive
-            foreach(Transform child in self)
-            {
-                result = FindRecursive(child, name);
-                if(result != null)
-                    return result;
-            }
-            return null;
         }
 
         //Behaviours

@@ -10,6 +10,7 @@ namespace Tropical.AvatarForge
         public abstract string helpURL { get; }
 
         //Build
+        public virtual int BuildOrder => 0;
         public abstract void PreBuild();
         public abstract void Build();
         public abstract void PostBuild();

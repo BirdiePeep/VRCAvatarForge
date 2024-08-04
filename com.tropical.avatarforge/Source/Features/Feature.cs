@@ -1,11 +1,14 @@
-﻿
+﻿using UnityEngine;
+
 namespace Tropical.AvatarForge
 {
     [System.Serializable]
     public abstract class Feature
     {
-        public int beginningOrder = 0;
-        public virtual int BuildPriority => 0;
+        //Build info
+        public GameObject gameObject;
+        public int beginningOrder;
+        public int buildOrder;
     }
 }
 

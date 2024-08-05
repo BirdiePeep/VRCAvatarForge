@@ -29,8 +29,7 @@ namespace Tropical.AvatarForge
         }
 
         public override string helpURL => "";
-        public override void PreBuild() { }
-        public override void Build()
+        public override void PreBuild()
         {
             Transform source = feature.source != null ? feature.source : feature.gameObject.transform;
             Transform dest = null;
@@ -65,6 +64,7 @@ namespace Tropical.AvatarForge
             //Attach
             AttachTransform(source, dest);
         }
+        public override void Build() { }
         public override void PostBuild() { }
         public override int BuildOrder => (int)AvatarBuilder.BuildPriority.AttachObjects;
 

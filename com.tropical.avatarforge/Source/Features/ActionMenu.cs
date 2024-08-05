@@ -68,6 +68,7 @@ namespace Tropical.AvatarForge
         [Serializable]
         public class Toggle : Control, IGroupedControl
         {
+            [Tooltip("Only one toggle can be enabled at a time for a group.  Turning another toggle on will turn off any previous toggle of the same group.")]
             public string group;
 
             public bool HasGroup

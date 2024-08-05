@@ -25,8 +25,8 @@ namespace Tropical.AvatarForge
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void OnPlayModeChanged()
         {
-            var avatar = GameObject.FindObjectOfType<VRCAvatarDescriptor>();
-            if(avatar != null)
+            var avatars = GameObject.FindObjectsByType<VRCAvatarDescriptor>(FindObjectsSortMode.None);
+            foreach(var avatar in avatars)
             {
                 AvatarBuilder.BuildAvatarDestructive(avatar);
             }

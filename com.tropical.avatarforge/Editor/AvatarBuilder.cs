@@ -14,8 +14,9 @@ namespace Tropical.AvatarForge
 
         public enum BuildPriority : int
         {
-            AttachObjects = -200,
-            MergeAnimators = -100,
+            AttachObjects = -300,
+            MergeAnimators = -200,
+            IgnorePhysbones = -100,
             Normal = 0,
             Other = 100,
         }
@@ -95,7 +96,7 @@ namespace Tropical.AvatarForge
         }
         public static bool BuildAvatarDestructive(VRCAvatarDescriptor desc)
         {
-            Debug.Log("Building Avatar");
+            Debug.Log($"Building Avatar '{desc.gameObject.name}'");
 
             //Store
             AvatarDescriptor = desc;
@@ -105,7 +106,7 @@ namespace Tropical.AvatarForge
             BuildFeatures.Clear();
 
             //Combine all components
-            var setups = desc.gameObject.GetComponentsInChildren<AvatarForge>(true);
+            var setups = AvatarRoot.GetComponentsInChildren<AvatarForge>(true);
             foreach(var setup in setups)
             {
                 //Remove from the hierarchy before merging
@@ -126,20 +127,6 @@ namespace Tropical.AvatarForge
                 }
             }
             BuildFeatures.Sort(new BuildFeaturesComparer()); //Sort!
-
-            //Find all attachable gameobjects
-            /*var attachments = new HashSet<GameObject>();
-            foreach(var setup in setups)
-            {
-                if(setup.gameObject == null || setup.gameObject == desc.gameObject)
-                    continue;
-                attachments.Add(setup.gameObject);
-            }
-            foreach(var obj in attachments)
-            {
-                //Attach prefab, this will delete setups
-                AttachPrefab(obj, AvatarDescriptor);
-            }*/
 
             //Prebuilding can modify this container, so we need to use a for loop
             for(int i=0; i<BuildFeatures.Count; i++) 
@@ -529,7 +516,7 @@ namespace Tropical.AvatarForge
             AdditionalParameters.Clear();
 
             //Receivers
-            var recivers = AvatarDescriptor.gameObject.GetComponentsInChildren<VRC.SDK3.Dynamics.Contact.Components.VRCContactReceiver>(true);
+            var recivers = AvatarRoot.GetComponentsInChildren<VRC.SDK3.Dynamics.Contact.Components.VRCContactReceiver>(true);
             foreach(var item in recivers)
             {
                 if(string.IsNullOrEmpty(item.parameter))
@@ -546,14 +533,16 @@ namespace Tropical.AvatarForge
             }
 
             //PhysBones
-            var physBones = AvatarDescriptor.gameObject.GetComponentsInChildren<VRC.SDK3.Dynamics.PhysBone.Components.VRCPhysBone>(true);
+            var physBones = AvatarRoot.GetComponentsInChildren<VRC.SDK3.Dynamics.PhysBone.Components.VRCPhysBone>(true);
             foreach(var item in physBones)
             {
                 if(string.IsNullOrEmpty(item.parameter))
                     continue;
                 DefineAdditional($"{item.parameter}_IsGrabbed", VRCExpressionParameters.ValueType.Bool);
+                DefineAdditional($"{item.parameter}_IsPosed", VRCExpressionParameters.ValueType.Bool);
                 DefineAdditional($"{item.parameter}_Angle", VRCExpressionParameters.ValueType.Float);
                 DefineAdditional($"{item.parameter}_Stretch", VRCExpressionParameters.ValueType.Float);
+                DefineAdditional($"{item.parameter}_Squish", VRCExpressionParameters.ValueType.Float);
             }
 
             void DefineAdditional(string name, VRCExpressionParameters.ValueType type)

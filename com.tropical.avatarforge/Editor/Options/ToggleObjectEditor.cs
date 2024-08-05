@@ -5,16 +5,9 @@ namespace Tropical.AvatarForge
 {
     public class ToggleObjectEditor : ActionEditor<ToggleObject>
     {
-        ReorderablePropertyList listDrawer = new ReorderablePropertyList(null, foldout: false, addName:"Object");
         public override void OnInspectorGUI()
         {
-            listDrawer.list = target.FindPropertyRelative("targets");
-            listDrawer.OnElementHeader = (index, element) =>
-            {
-                EditorGUILayout.PropertyField(element, GUIContent.none);
-                return true;
-            };
-            listDrawer.OnInspectorGUI();
+            EditorGUILayout.PropertyField(target.FindPropertyRelative("targets"));
         }
 
         public override void Apply(AnimationClip animation, Globals.AnimationLayer layer, bool isEnabled)

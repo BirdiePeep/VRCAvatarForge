@@ -192,9 +192,15 @@ namespace Tropical.AvatarForge
         }
         public static void BuildCleanup()
         {
-            var components = AvatarDescriptor.gameObject.GetComponentsInChildren<ITemporaryComponent>();
-            foreach(var comp in components)
+            //Destroy all temporary objects
+            var tempComponents = AvatarRoot.GetComponentsInChildren<ITemporaryComponent>(true);
+            foreach(var comp in tempComponents)
                 GameObject.DestroyImmediate(comp as MonoBehaviour);
+
+            //Destroy all AvatarForge scripts
+            var avatarForgeScripts = AvatarRoot.GetComponentsInChildren<AvatarForge>(true);
+            foreach(var comp in avatarForgeScripts)
+                GameObject.DestroyImmediate(comp);
 
             //Save
             EditorUtility.SetDirty(AvatarDescriptor);
@@ -244,13 +250,10 @@ namespace Tropical.AvatarForge
             }
 
             //Apply animator
-            Animator.runtimeAnimatorController = FxController;
+            //Animator.runtimeAnimatorController = FxController;
 
             //Save prefab
             AssetDatabase.SaveAssets();
-
-            //Destroy Actions Descriptor
-            //GameObject.DestroyImmediate(ActionsDescriptor.gameObject);
         }
 
         //Controllers
@@ -800,7 +803,9 @@ namespace Tropical.AvatarForge
             var layer = GetControllerLayer(controller, layerName);
             if(layer == null || layer.stateMachine == null)
             {
-                Debug.LogError("wut");
+                Debug.LogError($"Unexpected Error: Unable to get control layer named '{layerName}'");
+                AvatarBuilder.BuildFailed = true;
+                return;
             }
             layer.stateMachine.entryTransitions = null;
             layer.stateMachine.anyStateTransitions = null;
@@ -1521,6 +1526,11 @@ namespace Tropical.AvatarForge
             {
                 ActionMenuEditor.AddCondition(control, transition, equals);
             }
+        }
+
+        public static string GetPath(Transform from, Transform to)
+        {
+            return AnimationUtility.CalculateTransformPath(from, to);
         }
     }
 }

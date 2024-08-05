@@ -55,7 +55,7 @@ namespace Tropical.AvatarForge
 
             if(Application.isPlaying)
             {
-                DrawRuntimeUI();
+                //DrawRuntimeUI();
                 return;
             }
 

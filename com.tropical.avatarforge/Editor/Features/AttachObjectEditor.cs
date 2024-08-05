@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using VRC.Core;
 
 namespace Tropical.AvatarForge
 {
@@ -8,6 +9,7 @@ namespace Tropical.AvatarForge
     {
         public override void OnInspectorGUI()
         {
+            
             EditorGUILayout.PropertyField(target.FindPropertyRelative("source"));
             var attachTarget = target.FindPropertyRelative("attachTarget");
             EditorGUILayout.PropertyField(attachTarget);
@@ -17,8 +19,11 @@ namespace Tropical.AvatarForge
                 case AttachObject.Target.Root:
                     break;
                 case AttachObject.Target.Path:
+                {
                     EditorGUILayout.PropertyField(target.FindPropertyRelative("path"));
+                    EditorGUILayout.HelpBox("Searches by either path or unique name", MessageType.Info);
                     break;
+                }
                 case AttachObject.Target.HumanoidBone:
                     EditorGUILayout.PropertyField(target.FindPropertyRelative("humanBone"));
                     break;
@@ -43,8 +48,12 @@ namespace Tropical.AvatarForge
                     dest = AvatarBuilder.AvatarRoot.Find(feature.path);
                     if(dest == null)
                     {
-                        Debug.LogError($"AttachObject: Unable to find destination transform at path:'{feature.path}'");
-                        return;
+                        dest = FindRecursive(AvatarBuilder.AvatarRoot, feature.path);
+                        if(dest == null)
+                        {
+                            Debug.LogError($"AttachObject: Unable to find destination transform at path:'{feature.path}'");
+                            return;
+                        }
                     }
                     break;
                 }

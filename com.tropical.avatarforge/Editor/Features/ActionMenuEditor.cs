@@ -661,6 +661,7 @@ namespace Tropical.AvatarForge
                         control.type = VRCExpressionsMenu.Control.ControlType.Button;
                         control.parameter = new VRCExpressionsMenu.Control.Parameter();
                         control.parameter.name = action.parameter;
+                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
                         control.value = action.controlValue;
                         expressionsMenu.controls.Add(control);
                     }
@@ -673,6 +674,7 @@ namespace Tropical.AvatarForge
                         control.type = VRCExpressionsMenu.Control.ControlType.Toggle;
                         control.parameter = new VRCExpressionsMenu.Control.Parameter();
                         control.parameter.name = action.parameter;
+                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
                         control.value = action.controlValue;
                         expressionsMenu.controls.Add(control);
                     }
@@ -717,6 +719,7 @@ namespace Tropical.AvatarForge
                         control.icon = action.icon;
                         control.type = VRCExpressionsMenu.Control.ControlType.SubMenu;
                         control.subMenu = expressionsSubMenu;
+                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
                         expressionsMenu.controls.Add(control);
 
                         //Populate sub-menu

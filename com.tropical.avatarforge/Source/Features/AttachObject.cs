@@ -8,11 +8,11 @@ namespace Tropical.AvatarForge
         public Transform source;
         public enum Target
         {
-            Root,
-            Path,
-            HumanoidBone,
+            Root = 6245,
+            Path = 5687,
+            HumanoidBone = 5265,
         }
-        public Target attachTarget;
+        public Target attachTarget = Target.Root;
         public string path;
         public HumanBodyBones humanBone;
 

@@ -149,10 +149,6 @@ namespace Tropical.AvatarForge
                     subMenu.subMenu = this.subMenu?.DeepCopy();
                 }
             }
-            public override bool ShouldBuild()
-            {
-                return subMenu != null;
-            }
         }
 
         public ActionMenu FindParent(ActionMenu child)

@@ -110,7 +110,7 @@ namespace Tropical.AvatarForge
             foreach(var setup in setups)
             {
                 //Remove from the hierarchy before merging
-                setup.transform.SetParent(null, false);
+                //setup.transform.SetParent(null, false);
 
                 //Add features
                 foreach(var feature in setup.features)

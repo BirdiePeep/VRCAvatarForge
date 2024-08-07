@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using static Tropical.AvatarForge.ActionMenu;
 using static Tropical.AvatarForge.Globals;
 using UnityEditor.Animations;
+using System.Linq;
+using Mono.Cecil;
+using static VRC.SDKBase.VRCPlayerApi;
 
 namespace Tropical.AvatarForge
 {
@@ -395,13 +398,42 @@ namespace Tropical.AvatarForge
         public override string helpURL => "";
         public override void PreBuild()
         {
-            if(CombinedMenu == null)
-                CombinedMenu = new ActionMenu();
-            Combine(CombinedMenu, feature);
+            //if(CombinedMenu == null)
+            //    CombinedMenu = new ActionMenu();
+            //Combine(CombinedMenu, feature);
         }
         public override void Build()
         {
-            if(feature != CombinedMenu)
+            //Collect all menu actions
+            var validControls = new List<ActionMenu.Control>();
+            CollectValidMenuActions(feature, validControls);
+
+            //Expression Parameters
+            BuildExpressionParameters(validControls);
+            if(AvatarBuilder.BuildFailed)
+                return;
+
+            //Expressions Menu
+            BuildExpressionsMenu(feature);
+
+            //Build controls
+            foreach(var action in validControls)
+            {
+                switch(action)
+                {
+                    case Toggle toggle:
+                        BuildToggle(toggle);
+                        break;
+                    case Button button:
+                        BuildButton(button);
+                        break;
+                    case Slider slider:
+                        BuildSlider(slider);
+                        break;
+                }
+            }
+
+            /*if(feature != CombinedMenu)
             {
                 if(CombinedMenu != null)
                 {
@@ -441,11 +473,11 @@ namespace Tropical.AvatarForge
                             break;
                     }
                 }
-            }
+            }*/
         }
         public override void PostBuild() { }
 
-        public static ActionMenu CombinedMenu;
+        //public static ActionMenu CombinedMenu;
         public static void Combine(ActionMenu dest, ActionMenu source)
         {
             if(source == null)
@@ -631,10 +663,40 @@ namespace Tropical.AvatarForge
         }
         static void BuildExpressionsMenu(ActionMenu rootMenu)
         {
+            var expressionsMenu = AvatarBuilder.AvatarDescriptor.expressionsMenu;
+
+            //Find the root menu path
+            if(!string.IsNullOrEmpty(rootMenu.menuPath))
+            {
+                var dest = AvatarBuilder.AvatarDescriptor.expressionsMenu;
+                var path = rootMenu.menuPath.Split('/');
+                foreach(var item in path)
+                {
+                    var found = FindControl(expressionsMenu, item, VRCExpressionsMenu.Control.ControlType.SubMenu);
+                    if(found == null)
+                    {
+                        //Create control
+                        var control = new VRCExpressionsMenu.Control();
+                        control.name = item;
+                        control.type = VRCExpressionsMenu.Control.ControlType.SubMenu;
+                        control.subMenu = CreateMenuAsset(item);
+                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
+                        expressionsMenu.controls.Add(control);
+
+                        expressionsMenu = control.subMenu; //Continue
+                    }
+                    else
+                        expressionsMenu = found.subMenu; //Continue
+                }
+            }
+
             //Expressions
-            CreateMenu(rootMenu, AvatarBuilder.AvatarDescriptor.expressionsMenu);
+            CreateMenu(rootMenu, expressionsMenu);
             void CreateMenu(ActionMenu ourMenu, VRCExpressionsMenu expressionsMenu)
             {
+                if(ourMenu == null || expressionsMenu == null)
+                    return;
+
                 //Record old controls
                 var oldControls = expressionsMenu.controls.ToArray();
 
@@ -693,41 +755,22 @@ namespace Tropical.AvatarForge
                     }
                     else if(action is SubMenu subMenu)
                     {
-                        //Recover old sub-menu
-                        VRCExpressionsMenu expressionsSubMenu = null;
-                        foreach(var controlIter in oldControls)
+                        //Find/Create Sub-Menu
+                        var control = FindControl(expressionsMenu, action.name, VRCExpressionsMenu.Control.ControlType.SubMenu);
+                        if(control == null)
                         {
-                            if(controlIter.name == action.name)
-                            {
-                                expressionsSubMenu = controlIter.subMenu;
-                                break;
-                            }
+                            control = new VRCExpressionsMenu.Control();
+                            control.name = action.name;
+                            control.icon = action.icon;
+                            control.type = VRCExpressionsMenu.Control.ControlType.SubMenu;
+                            control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
+                            expressionsMenu.controls.Add(control);
                         }
-
-                        //Create sub-menu
-                        bool wasCreated = false;
-                        if(expressionsSubMenu == null)
-                        {
-                            expressionsSubMenu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
-                            expressionsSubMenu.name = "ExpressionsMenu_" + action.name;
-                            wasCreated = true;
-                        }
-
-                        //Create control
-                        var control = new VRCExpressionsMenu.Control();
-                        control.name = action.name;
-                        control.icon = action.icon;
-                        control.type = VRCExpressionsMenu.Control.ControlType.SubMenu;
-                        control.subMenu = expressionsSubMenu;
-                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
-                        expressionsMenu.controls.Add(control);
+                        if(control.subMenu == null)
+                            control.subMenu = CreateMenuAsset(action.name);
 
                         //Populate sub-menu
-                        CreateMenu(subMenu.subMenu, expressionsSubMenu);
-
-                        //Save
-                        if(wasCreated)
-                            AvatarBuilder.SaveAsset(expressionsSubMenu, AvatarForge.GetSaveDirectory(), "Generated");
+                        CreateMenu(subMenu.subMenu, control.subMenu);
                     }
                 }
 
@@ -869,6 +912,24 @@ namespace Tropical.AvatarForge
 
             //Set
             transition.AddCondition(mode, control.controlValue, control.parameter);
+        }
+
+        static VRCExpressionsMenu.Control FindControl(VRCExpressionsMenu menu, string name, VRCExpressionsMenu.Control.ControlType type)
+        {
+            foreach(var control in menu.controls)
+            {
+                if(control.name == name && control.type == type)
+                    return control;
+            }
+            return null;
+        }
+        static VRCExpressionsMenu CreateMenuAsset(string name)
+        {
+            var menu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
+            menu.name = "Menu_" + name;
+            AvatarBuilder.SaveAsset(menu, AvatarForge.GetSaveDirectory(), "Generated");
+
+            return menu;
         }
     }
 }

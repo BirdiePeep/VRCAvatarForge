@@ -668,7 +668,6 @@ namespace Tropical.AvatarForge
             //Find the root menu path
             if(!string.IsNullOrEmpty(rootMenu.menuPath))
             {
-                var dest = AvatarBuilder.AvatarDescriptor.expressionsMenu;
                 var path = rootMenu.menuPath.Split('/');
                 foreach(var item in path)
                 {
@@ -692,93 +691,88 @@ namespace Tropical.AvatarForge
 
             //Expressions
             CreateMenu(rootMenu, expressionsMenu);
-            void CreateMenu(ActionMenu ourMenu, VRCExpressionsMenu expressionsMenu)
+        }
+        static void CreateMenu(ActionMenu ourMenu, VRCExpressionsMenu expressionsMenu)
+        {
+            if(ourMenu == null || expressionsMenu == null)
+                return;
+
+            //Check size
+            if(expressionsMenu.controls.Count + ourMenu.controls.Count > VRCExpressionsMenu.MAX_CONTROLS)
             {
-                if(ourMenu == null || expressionsMenu == null)
-                    return;
-
-                //Record old controls
-                var oldControls = expressionsMenu.controls.ToArray();
-
-                //Check size
-                if(expressionsMenu.controls.Count + ourMenu.controls.Count > VRCExpressionsMenu.MAX_CONTROLS)
-                {
-                    AvatarBuilder.BuildFailed = true;
-                    EditorUtility.DisplayDialog("Build Failed", $"Expressions Menu has too many actions defined. {expressionsMenu.controls.Count + ourMenu.controls.Count}/{VRCExpressionsMenu.MAX_CONTROLS}", "Okay");
-                    return;
-                }
-
-                //Create controls from actions
-                foreach(var action in ourMenu.controls)
-                {
-                    if(!action.ShouldBuild())
-                        continue;
-
-                    if(action is Button)
-                    {
-                        //Create control
-                        var control = new VRCExpressionsMenu.Control();
-                        control.name = action.name;
-                        control.icon = action.icon;
-                        control.type = VRCExpressionsMenu.Control.ControlType.Button;
-                        control.parameter = new VRCExpressionsMenu.Control.Parameter();
-                        control.parameter.name = action.parameter;
-                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
-                        control.value = action.controlValue;
-                        expressionsMenu.controls.Add(control);
-                    }
-                    else if(action is Toggle)
-                    {
-                        //Create control
-                        var control = new VRCExpressionsMenu.Control();
-                        control.name = action.name;
-                        control.icon = action.icon;
-                        control.type = VRCExpressionsMenu.Control.ControlType.Toggle;
-                        control.parameter = new VRCExpressionsMenu.Control.Parameter();
-                        control.parameter.name = action.parameter;
-                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
-                        control.value = action.controlValue;
-                        expressionsMenu.controls.Add(control);
-                    }
-                    else if(action is Slider)
-                    {
-                        //Create control
-                        var control = new VRCExpressionsMenu.Control();
-                        control.name = action.name;
-                        control.icon = action.icon;
-                        control.type = VRCExpressionsMenu.Control.ControlType.RadialPuppet;
-                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[1];
-                        control.subParameters[0] = new VRCExpressionsMenu.Control.Parameter();
-                        control.subParameters[0].name = action.parameter;
-                        control.value = action.controlValue;
-                        expressionsMenu.controls.Add(control);
-                    }
-                    else if(action is SubMenu subMenu)
-                    {
-                        //Find/Create Sub-Menu
-                        var control = FindControl(expressionsMenu, action.name, VRCExpressionsMenu.Control.ControlType.SubMenu);
-                        if(control == null)
-                        {
-                            control = new VRCExpressionsMenu.Control();
-                            control.name = action.name;
-                            control.icon = action.icon;
-                            control.type = VRCExpressionsMenu.Control.ControlType.SubMenu;
-                            control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
-                            expressionsMenu.controls.Add(control);
-                        }
-                        if(control.subMenu == null)
-                            control.subMenu = CreateMenuAsset(action.name);
-
-                        //Populate sub-menu
-                        CreateMenu(subMenu.subMenu, control.subMenu);
-                    }
-                }
-
-                //Save prefab
-                EditorUtility.SetDirty(expressionsMenu);
+                AvatarBuilder.BuildFailed = true;
+                EditorUtility.DisplayDialog("Build Failed", $"Expressions Menu has too many actions defined. {expressionsMenu.controls.Count + ourMenu.controls.Count}/{VRCExpressionsMenu.MAX_CONTROLS}", "Okay");
+                return;
             }
 
-            //Save all assets
+            //Create controls from actions
+            foreach(var action in ourMenu.controls)
+            {
+                if(!action.ShouldBuild())
+                    continue;
+
+                if(action is Button)
+                {
+                    //Create control
+                    var control = new VRCExpressionsMenu.Control();
+                    control.name = action.name;
+                    control.icon = action.icon;
+                    control.type = VRCExpressionsMenu.Control.ControlType.Button;
+                    control.parameter = new VRCExpressionsMenu.Control.Parameter();
+                    control.parameter.name = action.parameter;
+                    control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
+                    control.value = action.controlValue;
+                    expressionsMenu.controls.Add(control);
+                }
+                else if(action is Toggle)
+                {
+                    //Create control
+                    var control = new VRCExpressionsMenu.Control();
+                    control.name = action.name;
+                    control.icon = action.icon;
+                    control.type = VRCExpressionsMenu.Control.ControlType.Toggle;
+                    control.parameter = new VRCExpressionsMenu.Control.Parameter();
+                    control.parameter.name = action.parameter;
+                    control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
+                    control.value = action.controlValue;
+                    expressionsMenu.controls.Add(control);
+                }
+                else if(action is Slider)
+                {
+                    //Create control
+                    var control = new VRCExpressionsMenu.Control();
+                    control.name = action.name;
+                    control.icon = action.icon;
+                    control.type = VRCExpressionsMenu.Control.ControlType.RadialPuppet;
+                    control.subParameters = new VRCExpressionsMenu.Control.Parameter[1];
+                    control.subParameters[0] = new VRCExpressionsMenu.Control.Parameter();
+                    control.subParameters[0].name = action.parameter;
+                    control.value = action.controlValue;
+                    expressionsMenu.controls.Add(control);
+                }
+                else if(action is SubMenu subMenu)
+                {
+                    //Find/Create Sub-Menu
+                    var control = FindControl(expressionsMenu, action.name, VRCExpressionsMenu.Control.ControlType.SubMenu);
+                    if(control == null)
+                    {
+                        control = new VRCExpressionsMenu.Control();
+                        control.name = action.name;
+                        control.icon = action.icon;
+                        control.type = VRCExpressionsMenu.Control.ControlType.SubMenu;
+                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[0];
+                        expressionsMenu.controls.Add(control);
+                    }
+                    if(control.subMenu == null)
+                        control.subMenu = CreateMenuAsset(action.name);
+
+                    //Populate sub-menu
+                    CreateMenu(subMenu.subMenu, control.subMenu);
+                }
+            }
+
+            //Save prefab
+            EditorUtility.SetDirty(expressionsMenu);
             AssetDatabase.SaveAssets();
         }
 

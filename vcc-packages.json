@@ -6,7 +6,7 @@
 	"packages": {
 		"com.tropical.avatarforge": {
 			"versions": {
-				{
+				"0.2.0": {
 					"name": "com.tropical.avatarforge",
 					"displayName": "VRCAvatarForge",
 					"version": "0.2.0",

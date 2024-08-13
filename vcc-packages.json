@@ -1,7 +1,7 @@
 {
 	"name": "VRCAvatarForge",
 	"author": "Kiro Neem",
-	"url": "https://github.com/BirdiePeep/VRCAvatarForge",
+	"url": "https://github.com/BirdiePeep/VRCAvatarForge/raw/main/vcc-packages.json",
 	"id": "com.tropical.avatarforge",
 	"packages": {
 		"com.tropical.avatarforge": {
@@ -10,7 +10,7 @@
 					"name": "com.tropical.avatarforge",
 					"displayName": "VRCAvatarForge",
 					"version": "0.2.0",
-					"unity" : "2022.3",
+					"unity": "2022.3",
 					"description": "Streamlined workflow for VRChat avatars.",
 					"hideInEditor": false,
 					"url": "https://github.com/BirdiePeep/VRCAvatarForge/raw/main/Releases/com.tropical.avatarforge.0.2.0.zip"
@@ -19,7 +19,7 @@
 					"name": "com.tropical.avatarforge",
 					"displayName": "VRCAvatarForge",
 					"version": "0.1.4",
-					"unity" : "2022.3",
+					"unity": "2022.3",
 					"description": "Streamlined workflow for VRChat avatars.",
 					"hideInEditor": false,
 					"url": "https://github.com/BirdiePeep/VRCAvatarForge/raw/main/Releases/com.tropical.avatarforge.0.1.4.zip"

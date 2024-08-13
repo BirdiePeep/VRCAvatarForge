@@ -6,6 +6,15 @@
 	"packages": {
 		"com.tropical.avatarforge": {
 			"versions": {
+				{
+					"name": "com.tropical.avatarforge",
+					"displayName": "VRCAvatarForge",
+					"version": "0.2.0",
+					"unity" : "2022.3",
+					"description": "Streamlined workflow for VRChat avatars.",
+					"hideInEditor": false,
+					"url": "https://github.com/BirdiePeep/VRCAvatarForge/raw/main/Releases/com.tropical.avatarforge.0.2.0.zip"
+				},
 				"0.1.4": {
 					"name": "com.tropical.avatarforge",
 					"displayName": "VRCAvatarForge",

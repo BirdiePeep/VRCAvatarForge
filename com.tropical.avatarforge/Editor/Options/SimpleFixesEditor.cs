@@ -73,6 +73,8 @@ namespace Tropical.AvatarForge
                 var materials = renderer.sharedMaterials;
                 foreach(var material in materials)
                 {
+                    if(material == null || material.shader == null)
+                        continue;
                     int count = material.shader.GetPropertyCount();
                     for(int i = 0; i < count; i++)
                     {

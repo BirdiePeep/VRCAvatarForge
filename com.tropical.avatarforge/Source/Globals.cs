@@ -1,4 +1,5 @@
-﻿using VRC.SDK3.Avatars.Components;
+﻿using System.Collections.Generic;
+using VRC.SDK3.Avatars.Components;
 
 namespace Tropical.AvatarForge
 {
@@ -88,5 +89,10 @@ namespace Tropical.AvatarForge
             On = 1,
             Off = 0
         }
+    }
+
+    public interface ITriggersProvider
+    {
+        public IEnumerable<Trigger> GetTriggers(bool isEnter);
     }
 }

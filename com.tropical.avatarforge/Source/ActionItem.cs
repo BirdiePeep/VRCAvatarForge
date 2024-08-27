@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using System.Linq;
 
 namespace Tropical.AvatarForge
 {
     [System.Serializable]
-    public class ActionItem
+    public abstract class ActionItem
     {
         //Simple Data
         public bool enabled = true;
@@ -32,166 +33,59 @@ namespace Tropical.AvatarForge
                 return false;
             return true;
         }
-
-        //Triggers
-        [System.Serializable]
-        public class Trigger
+        
+        public virtual IEnumerable<Trigger> GetTriggers(bool isEnter)
         {
-            public Trigger()
+            var subTriggers = GetSubTriggers(isEnter).ToArray();
+            if(subTriggers.Length > 0)
             {
+                //Return sub-triggers
+                foreach(var trigger in GetSubTriggers(isEnter))
+                    yield return trigger;
             }
-            public Trigger(Trigger source)
+            else if(isEnter)
             {
-                this.type = source.type;
-                this.foldout = source.foldout;
-                foreach(var item in source.conditions)
-                    this.conditions.Add(new Condition(item));
+                //Return default enter
+                yield return new Trigger();
             }
-            public enum Type
-            {
-                Simple = 0,
-                Enter = 1,
-                Exit = 2,
-            }
-
-            public bool HasEnter()
-            {
-                return type == Type.Simple || type == Type.Enter;
-            }
-            public bool HasExit()
-            {
-                return type == Type.Simple || type == Type.Exit;
-            }
-
-            public IEnumerable<Condition> GetConditions(bool isEnter)
-            {
-                switch(type)
-                {
-                    case Type.Simple:
-                    {
-                        if(isEnter)
-                        {
-                            foreach(var item in conditions)
-                                yield return item;
-                        }
-                        else
-                        {
-                            foreach(var item in conditions)
-                                yield return item.GetInverse();
-                        }
-                        break;
-                    }
-                    case Type.Enter:
-                    {
-                        if(isEnter)
-                        {
-                            foreach(var item in conditions)
-                                yield return item;
-                        }
-                        break;
-                    }
-                    case Type.Exit:
-                    {
-                        if(!isEnter)
-                        {
-                            foreach(var item in conditions)
-                                yield return item;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            public Type type;
-            public List<Condition> conditions = new List<Condition>();
-            public bool foldout = true;
         }
-
-        [System.Serializable]
-        public class Condition
-        {
-            public Condition()
-            {
-            }
-            public Condition(Condition source)
-            {
-                this.type = source.type;
-                this.parameter = string.Copy(source.parameter);
-                this.logic = source.logic;
-                this.value = source.value;
-                this.shared = source.shared;
-            }
-            public Condition(Globals.ParameterEnum type, string parameter, Logic logic, float value)
-            {
-                this.type = type;
-                this.parameter = parameter;
-                this.logic = logic;
-                this.value = value;
-            }
-            public enum Logic
-            {
-                Equals = 0,
-                NotEquals = 1,
-                GreaterThen = 2,
-                LessThen = 3,
-            }
-            public enum LogicEquals
-            {
-                Equals = 0,
-                NotEquals = 1,
-            }
-            public enum LogicCompare
-            {
-                GreaterThen = 2,
-                LessThen = 3,
-            }
-
-            public Condition GetInverse()
-            {
-                var result = new Condition(this);
-                switch(logic)
-                {
-                    case Logic.Equals:
-                        result.logic = Logic.NotEquals;
-                        break;
-                    case Logic.NotEquals:
-                        result.logic = Logic.Equals;
-                        break;
-                    case Logic.GreaterThen:
-                        result.logic = Logic.LessThen;
-                        break;
-                    case Logic.LessThen:
-                        result.logic = Logic.GreaterThen;
-                        break;
-                }
-                return result;
-            }
-
-            public string GetParameter()
-            {
-                if(type == Globals.ParameterEnum.Custom)
-                    return parameter;
-                else
-                    return type.ToString();
-            }
-
-            public Globals.ParameterEnum type;
-            public string parameter;
-            public Logic logic = Logic.Equals;
-            public float value = 1;
-            public bool shared = false;
-        }
-        public virtual IEnumerable<Trigger> GetTriggers()
+        protected IEnumerable<Trigger> GetSubTriggers(bool isEnter)
         {
             foreach(var option in options)
             {
-                if(option is ITriggerProvider provder)
+                if(option is ITriggersProvider provder)
                 {
-                    foreach(var item in provder.GetTriggers())
+                    foreach(var item in provder.GetTriggers(isEnter))
                         yield return item;
                 }
             }
         }
+        protected IEnumerable<Trigger> GetTriggers(Trigger parent, bool isEnter)
+        {
+            //Return sub-triggers
+            bool includedParent = false;
+            var subTriggers = GetSubTriggers(isEnter);
+            foreach(var item in subTriggers)
+            {
+                includedParent = true;
+
+                var combined = new Trigger(item);
+                combined.AddConditions(parent);
+                yield return combined;
+
+                /*if(item.inheritParentConditions)
+                {
+                    includedParent = true;
+
+                    var combined = new Trigger(item);
+                    combined.AddConditions(parent);
+                    yield return combined;
+                }*/
+            }
+            if(!includedParent)
+                yield return parent;
+        }
+
         public TYPE GetOption<TYPE>() where TYPE : ActionOption
         {
             foreach(var option in options)

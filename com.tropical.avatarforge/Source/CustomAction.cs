@@ -1,16 +1,14 @@
-﻿namespace Tropical.AvatarForge
+﻿using System.Collections.Generic;
+
+namespace Tropical.AvatarForge
 {
     [System.Serializable]
     public class CustomAction : ActionItem
     {
         public override bool HasExit()
         {
-            //Check for exit transition
-            foreach(var trigger in GetTriggers())
-            {
-                if(trigger.HasExit())
-                    return true;
-            }
+            foreach(var trigger in GetTriggers(false))
+                return true;
             return false;
         }
     }

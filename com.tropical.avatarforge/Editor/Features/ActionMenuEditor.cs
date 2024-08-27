@@ -811,11 +811,10 @@ namespace Tropical.AvatarForge
             }
 
             //Build
-            bool turnOffState = offAction != null;
             if(layerType == AnimationLayer.Action)
-                AvatarBuilder.BuildActionLayer(controller, layerActions, layerName, null, turnOffState);
+                AvatarBuilder.BuildActionLayer(controller, layerActions, layerName);
             else
-                AvatarBuilder.BuildNormalLayer(controller, layerActions, layerName, layerType, null, turnOffState);
+                AvatarBuilder.BuildNormalLayer(controller, layerActions, layerName, layerType);
         }
         static void BuildToggle(Toggle toggle)
         {

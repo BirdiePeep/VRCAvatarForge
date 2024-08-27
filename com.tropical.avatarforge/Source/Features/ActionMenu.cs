@@ -102,10 +102,25 @@ namespace Tropical.AvatarForge
                     toggle.isOffState = isOffState;
                 }
             }
+
+            public override IEnumerable<Trigger> GetTriggers(bool isEnter)
+            {
+                var trigger = new Trigger();
+                trigger.conditions.Add(new Condition(Globals.ParameterEnum.Custom, parameter, isEnter ? Condition.Logic.Equals : Condition.Logic.NotEquals, controlValue));
+                foreach(var item in GetTriggers(trigger, isEnter))
+                    yield return item;
+            }
         }
         [Serializable]
         public class Button : Control
         {
+            public override IEnumerable<Trigger> GetTriggers(bool isEnter)
+            {
+                var trigger = new Trigger();
+                trigger.conditions.Add(new Condition(Globals.ParameterEnum.Custom, parameter, isEnter ? Condition.Logic.Equals : Condition.Logic.NotEquals, controlValue));
+                foreach(var item in GetTriggers(trigger, isEnter))
+                    yield return item;
+            }
         }
         [Serializable]
         public class Slider : Control

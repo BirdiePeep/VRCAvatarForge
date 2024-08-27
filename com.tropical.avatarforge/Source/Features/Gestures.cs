@@ -1,4 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using static Tropical.AvatarForge.ActionItem;
+using static UnityEditor.Progress;
 
 namespace Tropical.AvatarForge
 {
@@ -19,6 +22,9 @@ namespace Tropical.AvatarForge
 
             public Globals.GestureEnum left = Globals.GestureEnum.Neutral;
             public Globals.GestureEnum right = Globals.GestureEnum.Neutral;
+
+            public float minWeightLeft = 0.5f;
+            public float minWeightRight = 0.5f;
 
             [System.Serializable]
             public struct GestureTable
@@ -69,44 +75,99 @@ namespace Tropical.AvatarForge
             }
             public GestureTable gestureTable = new GestureTable();
 
-            public override IEnumerable<Trigger> GetTriggers()
+            public override IEnumerable<Trigger> GetTriggers(bool isEnter)
             {
-                bool hadTriggers = false;
-                foreach(var item in base.GetTriggers())
-                {
-                    hadTriggers = true;
-                    foreach(var trigger in AddConditions(item))
-                        yield return trigger;
-                }
-                if(!hadTriggers)
-                {
-                    foreach(var trigger in AddConditions(new Trigger()))
-                        yield return trigger;
-                }
-                IEnumerable<Trigger> AddConditions(ActionItem.Trigger parent)
-                {
-                    if(sides == SideType.Either)
-                    {
-                        //Left trigger
-                        var trigger = new ActionItem.Trigger(parent);
-                        trigger.conditions.Add(new ActionItem.Condition(Globals.ParameterEnum.GestureLeft, "", ActionItem.Condition.Logic.Equals, (int)left));
-                        yield return trigger;
+                //Get triggers
+                var triggers = GetTriggersInternal(isEnter);
 
-                        //Right trigger
-                        trigger = new ActionItem.Trigger(parent);
-                        trigger.conditions.Add(new ActionItem.Condition(Globals.ParameterEnum.GestureRight, "", ActionItem.Condition.Logic.Equals, (int)right));
+                //Return sub-triggers
+                foreach(var trigger in triggers)
+                {
+                    foreach(var item in GetTriggers(trigger, isEnter))
+                        yield return item;
+                }
+            }
+            IEnumerable<Trigger> GetTriggersInternal(bool isEnter)
+            {
+                if(sides == SideType.Left)
+                {
+                    var trigger = new Trigger();
+                    AddConditionsL(trigger);
+                    yield return trigger;
+                }
+                else if(sides == SideType.Right)
+                {
+                    var trigger = new Trigger();
+                    AddConditionsR(trigger);
+                    yield return trigger;
+                }
+                else if(sides == SideType.Both)
+                {
+                    if(isEnter)
+                    {
+                        //Check both L & R
+                        var trigger = new Trigger();
+                        AddConditionsL(trigger);
+                        AddConditionsR(trigger);
                         yield return trigger;
                     }
                     else
                     {
-                        //Combined trigger
-                        var trigger = new ActionItem.Trigger(parent);
-                        if(sides != SideType.Right)
-                            trigger.conditions.Add(new ActionItem.Condition(Globals.ParameterEnum.GestureLeft, "", ActionItem.Condition.Logic.Equals, (int)left));
-                        if(sides != SideType.Left)
-                            trigger.conditions.Add(new ActionItem.Condition(Globals.ParameterEnum.GestureRight, "", ActionItem.Condition.Logic.Equals, (int)right));
+                        //Either results in false
+
+                        //Left
+                        {
+                            var trigger = new Trigger();
+                            AddConditionsL(trigger);
+                            yield return trigger;
+                        }
+
+                        //Right
+                        {
+                            var trigger = new Trigger();
+                            AddConditionsR(trigger);
+                            yield return trigger;
+                        }
+                    }
+                }
+                else if(sides == SideType.Either)
+                {
+                    if(isEnter) //Either allows entering
+                    {
+                        //Left
+                        {
+                            var trigger = new Trigger();
+                            AddConditionsL(trigger);
+                            yield return trigger;
+                        }
+
+                        //Right
+                        {
+                            var trigger = new Trigger();
+                            AddConditionsR(trigger);
+                            yield return trigger;
+                        }
+                    }
+                    else //Both requried to exit
+                    {
+                        //Create combined trigger
+                        var trigger = new Trigger();
+                        AddConditionsL(trigger);
+                        AddConditionsR(trigger);
                         yield return trigger;
                     }
+                }
+                void AddConditionsL(Trigger trigger)
+                {
+                    trigger.conditions.Add(new Condition(Globals.ParameterEnum.GestureLeft, "", isEnter ? Condition.Logic.Equals : Condition.Logic.NotEquals, (int)left));
+                    if(left == Globals.GestureEnum.Fist)
+                        trigger.conditions.Add(new Condition(Globals.ParameterEnum.GestureLeftWeight, "", isEnter ? Condition.Logic.GreaterThen : Condition.Logic.LessThen, minWeightLeft));
+                }
+                void AddConditionsR(Trigger trigger)
+                {
+                    trigger.conditions.Add(new Condition(Globals.ParameterEnum.GestureRight, "", isEnter ? Condition.Logic.Equals : Condition.Logic.NotEquals, (int)right));
+                    if(left == Globals.GestureEnum.Fist)
+                        trigger.conditions.Add(new Condition(Globals.ParameterEnum.GestureRightWeight, "", isEnter ? Condition.Logic.GreaterThen : Condition.Logic.LessThen, minWeightRight));
                 }
             }
         }

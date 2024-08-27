@@ -30,12 +30,23 @@ namespace Tropical.AvatarForge
                         if(sidesValue != Gestures.GestureItem.SideType.Left)
                             GUILayout.Label("L");
                         left.intValue = (int)(Globals.GestureEnum)EditorGUILayout.EnumPopup((Globals.GestureEnum)left.intValue);
+                        if(left.intValue == (int)Globals.GestureEnum.Fist)
+                        {
+                            GUILayout.Label("Min");
+                            EditorGUILayout.PropertyField(element.FindPropertyRelative("minWeightLeft"), GUIContent.none, GUILayout.Width(32));
+                        }
                     }
                     if(sidesValue != Gestures.GestureItem.SideType.Left)
                     {
                         if(sidesValue != Gestures.GestureItem.SideType.Right)
                             GUILayout.Label("R");
                         right.intValue = (int)(Globals.GestureEnum)EditorGUILayout.EnumPopup((Globals.GestureEnum)right.intValue);
+                        if(right.intValue == (int)Globals.GestureEnum.Fist)
+                        {
+                            GUILayout.Label("Min");
+                            EditorGUILayout.PropertyField(element.FindPropertyRelative("minWeightRight"), GUIContent.none, GUILayout.Width(32));
+                        }
+                            
                     }
                 }
                 //EditorGUILayout.EndHorizontal();
@@ -46,6 +57,8 @@ namespace Tropical.AvatarForge
             };
             gestureList.OnElementBody = (index, element) =>
             {
+                
+
                 actionEditor.SetTarget(element);
                 actionEditor.editor = editor;
                 actionEditor.setup = setup;
@@ -77,9 +90,9 @@ namespace Tropical.AvatarForge
                     item.name = $"Gesture_{item.sides}_{item.left}_{item.right}";
                     var controller = AvatarBuilder.GetController(layer);
                     if(layer == Globals.AnimationLayer.Action)
-                        AvatarBuilder.BuildActionLayer(controller, new ActionItem[] { item }, item.name, null);
+                        AvatarBuilder.BuildActionLayer(controller, new ActionItem[] { item }, item.name);
                     else
-                        AvatarBuilder.BuildNormalLayer(controller, new ActionItem[] { item }, item.name, layer, null);
+                        AvatarBuilder.BuildNormalLayer(controller, new ActionItem[] { item }, item.name, layer);
                 }
             }
         }

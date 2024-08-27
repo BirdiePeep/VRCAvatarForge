@@ -4,7 +4,7 @@ using UnityEditor.Animations;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
-using static VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
+using System.Linq;
 
 namespace Tropical.AvatarForge
 {
@@ -610,7 +610,7 @@ namespace Tropical.AvatarForge
         }
 
         //Normal
-        public static void BuildActionLayer(AnimatorController controller, IEnumerable<ActionItem> behaviourItems, string layerName, ActionMenu.Control parentAction, bool turnOffState = true, bool useWriteDefaults=true)
+        public static void BuildActionLayer(AnimatorController controller, IEnumerable<ActionItem> behaviourItems, string layerName, bool turnOffState = true, bool useWriteDefaults=true)
         {
             var layerType = Globals.AnimationLayer.Action;
 
@@ -622,17 +622,6 @@ namespace Tropical.AvatarForge
             layer.stateMachine.entryPosition = StatePosition(-1, 0);
             layer.stateMachine.anyStatePosition = StatePosition(-1, 1);
             layer.stateMachine.exitPosition = StatePosition(7, 0);
-
-            //Animation Layer Weight
-            int layerIndex = 0;
-            for(int i = 0; i < controller.layers.Length; i++)
-            {
-                if(controller.layers[i].name == layer.name)
-                {
-                    layerIndex = i;
-                    break;
-                }
-            }
 
             //Waiting state
             var waitingState = layer.stateMachine.AddState("Waiting", new Vector3(0, 0, 0));
@@ -652,7 +641,7 @@ namespace Tropical.AvatarForge
                     state.writeDefaultValues = useWriteDefaults;
 
                     //Transition
-                    AddTransitions(item, controller, waitingState, state, 0, true, parentAction);
+                    AddTransitions(item, controller, waitingState, state, 0, true);
 
                     //Playable Layer
                     var playable = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCPlayableLayerControl>();
@@ -729,7 +718,7 @@ namespace Tropical.AvatarForge
                     state.writeDefaultValues = useWriteDefaults;
 
                     //Transition
-                    AddTransitions(item, controller, lastState, state, 0, false, parentAction);
+                    AddTransitions(item, controller, lastState, state, 0, false);
 
                     //Playable Layer
                     var playable = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCPlayableLayerControl>();
@@ -797,7 +786,7 @@ namespace Tropical.AvatarForge
                 itemIter += 1;
             }
         }
-        public static void BuildNormalLayer(UnityEditor.Animations.AnimatorController controller, IEnumerable<ActionItem> actions, string layerName, Globals.AnimationLayer layerType, ActionMenu.Control parentAction, bool turnOffState = true, bool useWriteDefaults = true)
+        public static void BuildNormalLayer(UnityEditor.Animations.AnimatorController controller, IEnumerable<ActionItem> actions, string layerName, Globals.AnimationLayer layerType, bool useWriteDefaults = true)
         {
             //Prepare layer
             var layer = GetControllerLayer(controller, layerName);
@@ -841,7 +830,7 @@ namespace Tropical.AvatarForge
                     }
 
                     //Transition
-                    AddTransitions(action, controller, lastState, state, action.fadeIn, true, parentAction);
+                    AddTransitions(action, controller, lastState, state, action.fadeIn, true);
 
                     //Apply Actions
                     ApplyActionToState(action, controller, state, StateType.Enable, layerType);
@@ -877,7 +866,7 @@ namespace Tropical.AvatarForge
                 }
 
                 //Exit
-                if(action.HasExit() || parentAction != null)
+                if(action.HasExit())
                 {
                     //Disable
                     {
@@ -886,7 +875,7 @@ namespace Tropical.AvatarForge
                         state.writeDefaultValues = useWriteDefaults;
 
                         //Transition
-                        AddTransitions(action, controller, lastState, state, action.fadeOut, false, parentAction);
+                        AddTransitions(action, controller, lastState, state, action.fadeOut, false);
 
                         //Apply Actions
                         ApplyActionToState(action, controller, state, StateType.Disable, layerType);
@@ -974,7 +963,7 @@ namespace Tropical.AvatarForge
         }
 
         //Generated
-        public static void BuildGroupedLayers(IEnumerable<ActionItem> sourceActions, Globals.AnimationLayer layerType, ActionMenu.Control parentAction, System.Func<ActionItem, bool> onCheck, System.Action<AnimatorController, string, List<ActionItem>> onBuild)
+        public static void BuildGroupedLayers(IEnumerable<ActionItem> sourceActions, Globals.AnimationLayer layerType, System.Func<ActionItem, bool> onCheck, System.Action<AnimatorController, string, List<ActionItem>> onBuild)
         {
             var controller = GetController(layerType);
 
@@ -1023,7 +1012,7 @@ namespace Tropical.AvatarForge
         }
 
         //Conditions
-        public static void AddTriggerConditions(UnityEditor.Animations.AnimatorController controller, AnimatorStateTransition transition, IEnumerable<ActionItem.Condition> conditions)
+        public static void AddTriggerConditions(UnityEditor.Animations.AnimatorController controller, AnimatorStateTransition transition, IEnumerable<Condition> conditions)
         {
             foreach(var condition in conditions)
             {
@@ -1120,16 +1109,16 @@ namespace Tropical.AvatarForge
                     case AnimatorControllerParameterType.Bool:
                     {
                         if(condition.value == 0)
-                            transition.AddCondition(condition.logic == ActionItem.Condition.Logic.Equals ? AnimatorConditionMode.IfNot : AnimatorConditionMode.If, 1f, paramName);
+                            transition.AddCondition(condition.logic == Condition.Logic.Equals ? AnimatorConditionMode.IfNot : AnimatorConditionMode.If, 1f, paramName);
                         else
-                            transition.AddCondition(condition.logic == ActionItem.Condition.Logic.NotEquals ? AnimatorConditionMode.IfNot : AnimatorConditionMode.If, 1f, paramName);
+                            transition.AddCondition(condition.logic == Condition.Logic.NotEquals ? AnimatorConditionMode.IfNot : AnimatorConditionMode.If, 1f, paramName);
                         break;
                     }
                     case AnimatorControllerParameterType.Int:
-                        transition.AddCondition(condition.logic == ActionItem.Condition.Logic.NotEquals ? AnimatorConditionMode.NotEqual : AnimatorConditionMode.Equals, condition.value, paramName);
+                        transition.AddCondition(condition.logic == Condition.Logic.NotEquals ? AnimatorConditionMode.NotEqual : AnimatorConditionMode.Equals, condition.value, paramName);
                         break;
                     case AnimatorControllerParameterType.Float:
-                        transition.AddCondition(condition.logic == ActionItem.Condition.Logic.LessThen ? AnimatorConditionMode.Less : AnimatorConditionMode.Greater, condition.value, paramName);
+                        transition.AddCondition(condition.logic == Condition.Logic.LessThen ? AnimatorConditionMode.Less : AnimatorConditionMode.Greater, condition.value, paramName);
                         break;
                 }
             }
@@ -1411,123 +1400,25 @@ namespace Tropical.AvatarForge
                 return null;
             }
         }
-        static void AddTransitions(ActionItem behaviour, UnityEditor.Animations.AnimatorController controller, UnityEditor.Animations.AnimatorState lastState, UnityEditor.Animations.AnimatorState state, float transitionTime, bool isEnter, ActionMenu.Control parentAction)
+        static void AddTransitions(ActionItem behaviour, UnityEditor.Animations.AnimatorController controller, UnityEditor.Animations.AnimatorState lastState, UnityEditor.Animations.AnimatorState state, float transitionTime, bool isEnter)
         {
-            //Find valid triggers
-            var triggers = new List<ActionItem.Trigger>();
-            foreach(var trigger in behaviour.GetTriggers())
+            //Debug.Log($"Adding Transitions type:{behaviour.GetType().Name} isEnter:{isEnter}");
+
+            //Generate transitions based on triggers
+            var triggers = behaviour.GetTriggers(isEnter);
+            foreach(var trigger in triggers)
             {
-                switch(trigger.type)
-                {
-                    case ActionItem.Trigger.Type.Simple:
-                    {
-                        if(isEnter)
-                            triggers.Add(trigger);
-                        else
-                        {
-                            //Perform exit as an OR evaluation
-                            foreach(var condition in trigger.conditions)
-                            {
-                                var newTrigger = new ActionItem.Trigger();
-                                newTrigger.conditions.Add(condition);
-                                triggers.Add(newTrigger);
-                            }
-                        }
-                        break;
-                    }
-                    case ActionItem.Trigger.Type.Enter:
-                    {
-                        if(isEnter)
-                            triggers.Add(trigger);
-                        break;
-                    }
-                    case ActionItem.Trigger.Type.Exit:
-                    {
-                        if(!isEnter)
-                            triggers.Add(trigger);
-                        break;
-                    }
-                }
-            }
-            bool controlEquals = isEnter;
-
-            //Add triggers
-            if(triggers.Count > 0)
-            {
-                //Add each transition
-                foreach(var trigger in triggers)
-                {
-                    //Add
-                    var transition = lastState.AddTransition(state);
-                    transition.hasExitTime = false;
-                    transition.duration = transitionTime;
-                    AddConditions(behaviour, transition, controlEquals);
-
-                    //Conditions
-                    AvatarBuilder.AddTriggerConditions(controller, transition, trigger.GetConditions(isEnter));
-
-                    //Parent Conditions - Enter
-                    if(isEnter && parentAction != null)
-                        AddConditions(parentAction, transition, controlEquals);
-
-                    //Finalize
-                    Finalize(transition);
-                }
-            }
-            else
-            {
-                if(isEnter)
-                {
-                    //Add single transition
-                    var transition = lastState.AddTransition(state);
-                    transition.hasExitTime = false;
-                    transition.duration = transitionTime;
-                    AddConditions(behaviour, transition, controlEquals);
-
-                    //Parent Conditions
-                    if(parentAction != null)
-                        AddConditions(parentAction, transition, controlEquals);
-
-                    //Finalize
-                    Finalize(transition);
-                }
-                else if(behaviour.HasExit())
-                {
-                    //Add single transition
-                    var transition = lastState.AddTransition(state);
-                    transition.hasExitTime = false;
-                    transition.duration = transitionTime;
-                    AddConditions(behaviour, transition, controlEquals);
-
-                    //Finalize
-                    Finalize(transition);
-                }
-            }
-
-            //Parent Conditions - Exit
-            if(!isEnter && parentAction != null)
-            {
+                //Add Transition
                 var transition = lastState.AddTransition(state);
                 transition.hasExitTime = false;
                 transition.duration = transitionTime;
-                AddConditions(parentAction, transition, controlEquals);
-            }
+                AvatarBuilder.AddTriggerConditions(controller, transition, trigger.GetConditions(isEnter));
 
-            void Finalize(AnimatorStateTransition transition)
-            {
+                //Finalize
                 if(transition.conditions.Length == 0)
                     transition.AddCondition(AnimatorConditionMode.If, 1, "True");
             }
         }
-        static void AddConditions(ActionItem behaviour, AnimatorStateTransition transition, bool equals)
-        {
-            //This is a hack
-            if(behaviour is ActionMenu.Control control)
-            {
-                ActionMenuEditor.AddCondition(control, transition, equals);
-            }
-        }
-
         public static string GetPath(Transform from, Transform to)
         {
             return AnimationUtility.CalculateTransformPath(from, to);

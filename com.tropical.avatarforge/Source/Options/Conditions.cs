@@ -2,52 +2,24 @@ using System.Collections.Generic;
 
 namespace Tropical.AvatarForge 
 {
-    public class Triggers : ActionOption, ITriggersProvider
+    public class Conditions : ActionOption, ITriggersProvider
     {
-        public TriggerData[] triggers;
-
-        [System.Serializable]
-        public struct TriggerData
-        {
-            public TriggerData(TriggerData source)
-            {
-                this.type = source.type;
-                this.conditions = (ConditionData[])source.conditions?.Clone();
-                this.foldout = source.foldout;
-            }
-
-            public enum Type
-            {
-                Simple = 0,
-                Enter = 1,
-                Exit = 2,
-            }
-            public bool HasEnterConditions()
-            {
-                return type == Type.Simple || type == Type.Enter;
-            }
-            public bool HasExitConditions()
-            {
-                return type == Type.Simple || type == Type.Exit;
-            }
-
-            public Type type;
-            public ConditionData[] conditions;
-            public bool foldout;
-        }
+        public bool requireAllExitConditions = false;
 
         [System.Serializable]
         public struct ConditionData
         {
             public ConditionData(ConditionData source)
             {
+                this.mode = source.mode;
                 this.type = source.type;
                 this.parameter = string.Copy(source.parameter);
                 this.logic = source.logic;
                 this.value = source.value;
             }
-            public ConditionData(Globals.ParameterEnum type, string parameter, Condition.Logic logic, float value)
+            public ConditionData(ConditionData.Mode mode, Globals.ParameterEnum type, string parameter, Condition.Logic logic, float value)
             {
+                this.mode = mode;
                 this.type = type;
                 this.parameter = parameter;
                 this.logic = logic;
@@ -93,49 +65,57 @@ namespace Tropical.AvatarForge
                     return type.ToString();
             }
 
+            public enum Mode
+            {
+                Simple = 0,
+                OnEnter = 1,
+                OnExit = 2,
+            }
+            public Mode mode;
+
+            //Condition data
             public Globals.ParameterEnum type;
             public string parameter;
             public Condition.Logic logic;
             public float value;
         }
+        public List<Condition> conditions = new List<Condition>();
 
         public override ActionOption Clone()
         {
-            var result = new Triggers();
-            result.triggers = new TriggerData[triggers.Length];
-            for(int i = 0; i < triggers.Length; i++)
-            {
-                result.triggers[i] = new TriggerData(triggers[i]);
-            }
+            var result = new Conditions();
+            foreach(var condition in conditions)
+                result.conditions.Add(new Condition(condition));
             return result;
         }
         public IEnumerable<Trigger> GetTriggers(bool isEnter)
         {
-            foreach(var trigger in triggers)
+            yield break;
+            /*if(isEnter)
             {
-                //Validate if it has conditions
-                if(isEnter ? !trigger.HasEnterConditions() : !trigger.HasExitConditions())
-                    continue;
-
-                if(trigger.type == TriggerData.Type.Simple && !isEnter)
-                {
-                    foreach(var condition in trigger.conditions)
-                    {
-                        var newTrigger = new Trigger();
-                        newTrigger.conditions.Add(condition.Build(true));
-                        yield return newTrigger;
-                    }
-                }
-                else
-                {
-                    var newTrigger = new Trigger();
-                    foreach(var condition in trigger.conditions)
-                    {
-                        newTrigger.conditions.Add(condition.Build(false));
-                    }
-                    yield return newTrigger;
-                }
+                if(trigger.HasEnterConditions())
+                    yield return trigger;
             }
+            else
+            {
+                if(trigger.HasExitConditions())
+                {
+                    if(requireAllExitConditions)
+                        yield return trigger;
+                    else
+                    {
+                        foreach(var condition in trigger.conditions)
+                        {
+                            if(condition.mode == Condition.Mode.OnExit || condition.mode == Condition.Mode.Simple)
+                            {
+                                var newTrigger = new Trigger();
+                                newTrigger.conditions.Add(condition);
+                                yield return newTrigger;
+                            }
+                        }
+                    }
+                }
+            }*/
         }
     }
 }

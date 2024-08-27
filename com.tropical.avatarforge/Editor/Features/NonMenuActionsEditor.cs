@@ -44,14 +44,14 @@ namespace Tropical.AvatarForge
         public override void PreBuild() { }
         public override void Build()
         {
-            BuildLayers(feature.actions, AnimationLayer.Action, null);
-            BuildLayers(feature.actions, AnimationLayer.FX, null);
+            BuildLayers(feature.actions, AnimationLayer.Action);
+            BuildLayers(feature.actions, AnimationLayer.FX);
         }
         public override void PostBuild() { }
-        void BuildLayers(IEnumerable<CustomAction> sourceActions, AnimationLayer layerType, ActionMenu.Control parentControl)
+        void BuildLayers(IEnumerable<CustomAction> sourceActions, AnimationLayer layerType)
         {
             //Build normal
-            AvatarBuilder.BuildGroupedLayers(sourceActions, layerType, parentControl,
+            AvatarBuilder.BuildGroupedLayers(sourceActions, layerType,
             delegate (ActionItem behaviour)
             {
                 if(!AvatarBuilder.AffectsLayer(behaviour, layerType))
@@ -60,15 +60,11 @@ namespace Tropical.AvatarForge
             },
             delegate (AnimatorController controller, string layerName, List<ActionItem> actions)
             {
-                //Name
-                if(parentControl != null)
-                    layerName = $"{parentControl.name}_{layerName}_SubActions";
-
                 //Build layer
                 if(layerType == AnimationLayer.Action)
-                    AvatarBuilder.BuildActionLayer(controller, actions, layerName, parentControl);
+                    AvatarBuilder.BuildActionLayer(controller, actions, layerName);
                 else
-                    AvatarBuilder.BuildNormalLayer(controller, actions, layerName, layerType, parentControl);
+                    AvatarBuilder.BuildNormalLayer(controller, actions, layerName, layerType);
             });
         }
     }

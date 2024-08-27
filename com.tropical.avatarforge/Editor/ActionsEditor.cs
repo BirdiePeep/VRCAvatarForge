@@ -51,7 +51,7 @@ namespace Tropical.AvatarForge
                 var editor = ActionEditorBase.FindEditor(action);
                 if(editor == null)
                 {
-                    EditorGUILayout.LabelField($"Unable to find editor for action '{action.GetType().FullName}'");
+                    EditorGUILayout.LabelField($"Unable to find editor for action '{action?.GetType().FullName}'");
                     return false;
                 }
                 else

@@ -3,42 +3,19 @@ using UnityEditor;
 
 namespace Tropical.AvatarForge
 {
-    public class TriggersEditor : ActionEditor<Triggers>
+    public class ConditionsEditor : ActionEditor<Conditions>
     {
-        ReorderablePropertyList triggerList = new ReorderablePropertyList(null, foldout: false, addName: "Trigger");
         ReorderablePropertyList conditionList = new ReorderablePropertyList(null, foldout: false, addName: "Condition");
         public override void OnInspectorGUI()
         {
-            var triggers = target.FindPropertyRelative("triggers");
-            triggerList.list = triggers;
-            triggerList.OnElementHeader = DrawTrigger;
-            triggerList.OnElementBody = DrawTriggerBody;
-            triggerList.OnInspectorGUI();
-        }
-        bool DrawTrigger(int index, SerializedProperty trigger)
-        {
-            //EditorGUILayout.LabelField("Trigger");
+            //EditorGUILayout.PropertyField(target.FindPropertyRelative("trigger.combineWithParent"));
+            EditorGUILayout.PropertyField(target.FindPropertyRelative("requireAllExitConditions"));
 
-            //Type
-            EditorGUILayout.PropertyField(trigger.FindPropertyRelative("type"), new GUIContent("Trigger"));
-
-            return true;
-        }
-        void DrawTriggerBody(int index, SerializedProperty trigger)
-        {
+            var trigger = target.FindPropertyRelative("trigger");
             var conditions = trigger.FindPropertyRelative("conditions");
-            if(conditions.arraySize == 0)
-            {
-                EditorGUILayout.HelpBox("Triggers without any conditions default to true.", MessageType.Warning);
-            }
-
-            //Conditions
             conditionList.list = conditions;
             conditionList.OnElementHeader = DrawTriggerCondition;
             conditionList.OnInspectorGUI();
-
-            //Options
-            //EditorGUILayout.PropertyField(trigger.FindPropertyRelative("inheritParentConditions"));
         }
         bool DrawTriggerCondition(int index, SerializedProperty condition)
         {
@@ -46,7 +23,8 @@ namespace Tropical.AvatarForge
             EditorGUILayout.BeginHorizontal(GUI.skin.box);
             {
                 //Mode
-                //EditorGUILayout.PropertyField(condition.FindPropertyRelative("mode"), GUIContent.none, GUILayout.Width(96));
+                var mode = condition.FindPropertyRelative("mode");
+                EditorGUILayout.PropertyField(mode, GUIContent.none);
 
                 //Type
                 var type = condition.FindPropertyRelative("type");

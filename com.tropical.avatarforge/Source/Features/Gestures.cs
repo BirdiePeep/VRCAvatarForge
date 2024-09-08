@@ -1,7 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using static Tropical.AvatarForge.ActionItem;
-using static UnityEditor.Progress;
 
 namespace Tropical.AvatarForge
 {
@@ -160,13 +157,13 @@ namespace Tropical.AvatarForge
                 void AddConditionsL(Trigger trigger)
                 {
                     trigger.conditions.Add(new Condition(Globals.ParameterEnum.GestureLeft, "", isEnter ? Condition.Logic.Equals : Condition.Logic.NotEquals, (int)left));
-                    if(left == Globals.GestureEnum.Fist)
+                    if(left == Globals.GestureEnum.Fist && minWeightLeft > 0f)
                         trigger.conditions.Add(new Condition(Globals.ParameterEnum.GestureLeftWeight, "", isEnter ? Condition.Logic.GreaterThen : Condition.Logic.LessThen, minWeightLeft));
                 }
                 void AddConditionsR(Trigger trigger)
                 {
                     trigger.conditions.Add(new Condition(Globals.ParameterEnum.GestureRight, "", isEnter ? Condition.Logic.Equals : Condition.Logic.NotEquals, (int)right));
-                    if(left == Globals.GestureEnum.Fist)
+                    if(left == Globals.GestureEnum.Fist && minWeightRight > 0f)
                         trigger.conditions.Add(new Condition(Globals.ParameterEnum.GestureRightWeight, "", isEnter ? Condition.Logic.GreaterThen : Condition.Logic.LessThen, minWeightRight));
                 }
             }

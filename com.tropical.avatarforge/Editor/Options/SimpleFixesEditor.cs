@@ -94,7 +94,7 @@ namespace Tropical.AvatarForge
             foreach(var texture in textures)
             {
                 var path = AssetDatabase.GetAssetPath(texture);
-                var importer = (TextureImporter)TextureImporter.GetAtPath(path);
+                var importer = AssetImporter.GetAtPath(path) as TextureImporter;
                 if(importer == null)
                     continue;
                 if(importer.textureCompression == TextureImporterCompression.Uncompressed || importer.crunchedCompression == false)
